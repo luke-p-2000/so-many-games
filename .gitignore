@@ -1,0 +1,18 @@
+# App build outputs
+.task/
+.wails/
+bin/
+frontend/node_modules/
+frontend/bindings/
+frontend/dist/
+/somanygames.exe
+# Left behind if a build fails midway (normally deleted after `go build`)
+*.syso
+# Recreated by `wails3 package` when missing
+build/windows/nsis/MicrosoftEdgeWebview2Setup.exe
+
+# Windows and editor clutter
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
