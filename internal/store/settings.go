@@ -12,7 +12,8 @@ import (
 type Settings struct {
 	SteamID        string   `json:"steam_id"`
 	ProfileURL     string   `json:"profile_url"`
-	HoursLimit     int      `json:"hours_limit"`     // Shelved/Endless eligible under this many hours (R3)
+	ShelvedHours   int      `json:"shelved_hours"`   // Shelved eligible under this many hours (R3)
+	EndlessHours   int      `json:"endless_hours"`   // Endless eligible under this many hours (R3)
 	MinReviews     int      `json:"min_reviews"`     // R4, ADR 0010
 	RecentMonths   int      `json:"recent_months"`   // R1 Recent view
 	AbandonedDays  int      `json:"abandoned_days"`  // N1
@@ -26,13 +27,17 @@ type Settings struct {
 	LastSyncAt     string   `json:"last_sync_at"`
 }
 
+// legacyHoursLimit is the setting key that held one limit for Shelved and Endless.
+const legacyHoursLimit = "hours_limit"
+
 // WheelSizes are the allowed wheel sizes; 0 means All.
 var WheelSizes = []int{12, 15, 18, 24, 0}
 
 // DefaultSettings are the values from the requirements.
 func DefaultSettings() Settings {
 	return Settings{
-		HoursLimit:    10,
+		ShelvedHours:  10,
+		EndlessHours:  10,
 		MinReviews:    50,
 		RecentMonths:  6,
 		AbandonedDays: 60,
@@ -72,6 +77,15 @@ func LoadSettings(db *sql.DB) (Settings, error) {
 	if err != nil {
 		return s, err
 	}
+	// The single hours_limit was split into Shelved and Endless limits; carry it over.
+	if old, ok := stored[legacyHoursLimit]; ok {
+		for _, k := range []string{"shelved_hours", "endless_hours"} {
+			if _, set := stored[k]; !set {
+				stored[k] = old
+			}
+		}
+		delete(stored, legacyHoursLimit)
+	}
 	for k, v := range stored {
 		merged[k] = v
 	}
@@ -101,11 +115,14 @@ func WriteSettings(tx *sql.Tx, s Settings) error {
 	if !slices.Contains(WheelSizes, s.WheelSize) {
 		return errors.New("wheel size must be 12, 15, 18, 24 or All")
 	}
-	if s.HoursLimit < 0 || s.MinReviews < 0 || s.RecentMonths < 1 || s.AbandonedDays < 1 || s.ClassifyDays < 1 {
+	if s.ShelvedHours < 0 || s.EndlessHours < 0 || s.MinReviews < 0 || s.RecentMonths < 1 || s.AbandonedDays < 1 || s.ClassifyDays < 1 {
 		return errors.New("settings values must be positive")
 	}
 	m, err := toMap(s)
 	if err != nil {
+		return err
+	}
+	if _, err := tx.Exec(`DELETE FROM setting WHERE key = ?`, legacyHoursLimit); err != nil {
 		return err
 	}
 	for k, v := range m {

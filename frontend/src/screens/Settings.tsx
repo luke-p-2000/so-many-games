@@ -48,7 +48,8 @@ export function Settings({ go }: { go: (r: Route) => void }) {
       </Section>
 
       <Section title="Recommendations and wheel" note="Which games are eligible, and how the recent taste profile is measured.">
-        <Row label="Shelved and Endless eligible under" value={<NumberField value={draft.hours_limit} min={0} suffix="hours" onCommit={(v) => set("hours_limit", v)} />} />
+        <Row label="Shelved eligible under" value={<NumberField value={draft.shelved_hours} min={0} suffix="hours" onCommit={(v) => set("shelved_hours", v)} />} />
+        <Row label="Endless eligible under" value={<NumberField value={draft.endless_hours} min={0} suffix="hours" onCommit={(v) => set("endless_hours", v)} />} />
         <Row label="Minimum reviews" value={<NumberField value={draft.min_reviews} min={0} suffix="reviews" onCommit={(v) => set("min_reviews", v)} />} />
         <Row label="Recent window" value={<NumberField value={draft.recent_months} min={1} suffix="months" onCommit={(v) => set("recent_months", v)} />} />
       </Section>

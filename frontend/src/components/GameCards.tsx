@@ -136,11 +136,11 @@ export function UnavailableToggle({ game }: { game: Game }) {
   return <button className="btn small ghost" onClick={() => MetaService.SetUnavailable(game.appid, false).then(refresh, report)}>Fetch again</button>;
 }
 
-/** Opens Pick back up (R7): Shelved and Endless games you stopped playing. */
+/** Opens Pick back up (R7, labelled Shelved games): Shelved and Endless games you stopped playing. */
 export function PickBackUpButton({ go }: { go: (r: Route) => void }) {
   return (
     <button className="btn" onClick={() => go("pickbackup")} title="Shelved and Endless games you stopped playing, longest untouched first">
-      <span aria-hidden>↺</span> Resume shelved games
+      <span aria-hidden>↺</span> Shelved games
     </button>
   );
 }

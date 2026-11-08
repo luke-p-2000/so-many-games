@@ -11,27 +11,35 @@ import (
 	"somanygames/internal/library"
 )
 
+// Limits are the hours under which Shelved and Endless games stay eligible (R3).
+type Limits struct {
+	Shelved int
+	Endless int
+}
+
 // Eligible is the single pool rule used by recommendations, the wheel and the backlog
 // (R3, ADR 0008): classified, not hidden, Unplayed or To play at any hours, or Shelved or
-// Endless under the hours limit.
-func Eligible(g library.Game, hoursLimit int) bool {
+// Endless under their own hours limit.
+func Eligible(g library.Game, l Limits) bool {
 	if g.Hidden || !g.Classified {
 		return false
 	}
 	switch g.Status {
 	case library.Unplayed, library.ToPlay:
 		return true
-	case library.Shelved, library.Endless:
-		return g.Hours() < float64(hoursLimit)
+	case library.Shelved:
+		return g.Hours() < float64(l.Shelved)
+	case library.Endless:
+		return g.Hours() < float64(l.Endless)
 	}
 	return false
 }
 
 // Pool returns the eligible games.
-func Pool(games []library.Game, hoursLimit int) []library.Game {
+func Pool(games []library.Game, l Limits) []library.Game {
 	var out []library.Game
 	for _, g := range games {
-		if Eligible(g, hoursLimit) {
+		if Eligible(g, l) {
 			out = append(out, g)
 		}
 	}

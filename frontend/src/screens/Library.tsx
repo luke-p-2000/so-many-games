@@ -2,9 +2,8 @@ import { useMemo, useState } from "react";
 import { hours, LibraryService, list, MetaService, lastPlayedText, type Game } from "../api";
 import { FetchBanner } from "../components/Banners";
 import { Segmented } from "../components/bits";
-import { GameRow, GridTile, PickBackUpButton, tagLine, UnavailableToggle } from "../components/GameCards";
+import { GameRow, GridTile, tagLine, UnavailableToggle } from "../components/GameCards";
 import { useGames, useRefresh } from "../data";
-import type { Route } from "../routes";
 import { STATUSES, type StatusValue } from "../statuses";
 import { useReportError, useSetStatus, useToast } from "../toast";
 
@@ -13,15 +12,35 @@ const HOURS: Record<string, [number, number]> = {
   "": [0, Infinity], under2: [0, 2], "2to10": [2, 10], "10to50": [10, 50], over50: [50, Infinity],
 };
 
-const sorters: Record<Sort, (a: Game, b: Game) => number> = {
-  name: (a, b) => a.name.localeCompare(b.name),
-  hours: (a, b) => b.minutes - a.minutes,
-  lastPlayed: (a, b) => (b.lastPlayed ?? "").localeCompare(a.lastPlayed ?? ""),
-  review: (a, b) => (b.reviewPct ?? -1) - (a.reviewPct ?? -1) || (b.reviewCount ?? 0) - (a.reviewCount ?? 0),
-  release: (a, b) => b.releaseDate.localeCompare(a.releaseDate),
+type Key = string | number | null;
+/** Each sort's keys, most significant first; null means no data. */
+const sortKeys: Record<Sort, (g: Game) => Key[]> = {
+  name: (g) => [g.name.toLowerCase()],
+  hours: (g) => [g.minutes],
+  lastPlayed: (g) => [g.lastPlayed || null],
+  review: (g) => [g.reviewPct ?? null, g.reviewCount ?? 0],
+  release: (g) => [g.releaseDate || null],
 };
+/** The direction a sort starts in: names A–Z, everything else highest or newest first. */
+const DEFAULT_DESC: Record<Sort, boolean> = { name: false, hours: true, lastPlayed: true, review: true, release: true };
 
-export function Library({ go }: { go: (r: Route) => void }) {
+/** Compares by the sort's keys in the chosen direction; games with no data stay last either way. */
+function compare(sort: Sort, desc: boolean) {
+  return (a: Game, b: Game) => {
+    const ka = sortKeys[sort](a), kb = sortKeys[sort](b);
+    for (let i = 0; i < ka.length; i++) {
+      const x = ka[i], y = kb[i];
+      if (x === y) continue;
+      if (x === null) return 1;
+      if (y === null) return -1;
+      const c = typeof x === "string" ? x.localeCompare(y as string) : x - (y as number);
+      if (c) return desc ? -c : c;
+    }
+    return a.name.localeCompare(b.name);
+  };
+}
+
+export function Library() {
   const games = useGames();
   const setStatus = useSetStatus();
   const refresh = useRefresh();
@@ -35,6 +54,7 @@ export function Library({ go }: { go: (r: Route) => void }) {
   const [hoursRange, setHoursRange] = useState("");
   const [minReview, setMinReview] = useState(0);
   const [sort, setSort] = useState<Sort>("name");
+  const [desc, setDesc] = useState(false);
   const [showHidden, setShowHidden] = useState(false);
   const [view, setView] = useState<"rows" | "grid">("rows");
   const [selected, setSelected] = useState<Set<number>>(new Set());
@@ -57,8 +77,8 @@ export function Library({ go }: { go: (r: Route) => void }) {
         && (!genre || list(g.genres).includes(genre))
         && g.minutes / 60 >= lo && g.minutes / 60 < hi
         && (!minReview || (g.reviewPct ?? -1) >= minReview))
-      .sort(sorters[sort]);
-  }, [all, search, status, tag, genre, hoursRange, minReview, sort, showHidden]);
+      .sort(compare(sort, desc));
+  }, [all, search, status, tag, genre, hoursRange, minReview, sort, desc, showHidden]);
 
   const toggle = (id: number, on: boolean) => setSelected((s) => { const n = new Set(s); on ? n.add(id) : n.delete(id); return n; });
   const ids = [...selected];
@@ -67,18 +87,7 @@ export function Library({ go }: { go: (r: Route) => void }) {
     <div className="page">
       <div className="page-head">
         <h1>Library</h1>
-        <div className="toolbar one-line">
-          <select className="select" aria-label="Sort" value={sort} onChange={(e) => setSort(e.target.value as Sort)}>
-            <option value="name">Sort: Name</option>
-            <option value="hours">Sort: Hours</option>
-            <option value="lastPlayed">Sort: Last played</option>
-            <option value="review">Sort: Review score</option>
-            <option value="release">Sort: Release date</option>
-          </select>
-          <label className="check"><input type="checkbox" checked={showHidden} onChange={(e) => setShowHidden(e.target.checked)} /> Show hidden</label>
-          <PickBackUpButton go={go} />
-          <Segmented label="Layout" value={view} onChange={setView} options={[{ value: "rows", label: "Rows" }, { value: "grid", label: "Grid" }]} />
-        </div>
+        <Segmented label="Layout" value={view} onChange={setView} options={[{ value: "rows", label: "Rows" }, { value: "grid", label: "Grid" }]} />
       </div>
 
       <div className="toolbar one-line" role="search">
@@ -111,7 +120,29 @@ export function Library({ go }: { go: (r: Route) => void }) {
       </div>
 
       <FetchBanner />
-      <p className="faint">{visible.length} of {all.filter((g) => !g.hidden).length} games</p>
+      <div className="list-head">
+        <span className="faint">{visible.length} of {all.filter((g) => !g.hidden).length} games</span>
+        <div className="toolbar">
+          <label className="check faint"><input type="checkbox" checked={showHidden} onChange={(e) => setShowHidden(e.target.checked)} /> Show hidden</label>
+          <label className="sort-by faint">
+            Sort by
+            <select className="select" value={sort} onChange={(e) => { const s = e.target.value as Sort; setSort(s); setDesc(DEFAULT_DESC[s]); }}>
+              <option value="name">Name</option>
+              <option value="hours">Hours</option>
+              <option value="lastPlayed">Last played</option>
+              <option value="review">Review score</option>
+              <option value="release">Release date</option>
+            </select>
+          </label>
+          <button type="button" className="btn small ghost sort-dir" onClick={() => setDesc((d) => !d)}
+            aria-label={desc ? "Descending, switch to ascending" : "Ascending, switch to descending"} title={desc ? "Descending" : "Ascending"}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden
+              style={{ transform: desc ? "none" : "rotate(180deg)" }}>
+              <path d="M12 5v14M6 13l6 6 6-6" />
+            </svg>
+          </button>
+        </div>
+      </div>
 
       {view === "rows" ? (
         <div className="row-list">

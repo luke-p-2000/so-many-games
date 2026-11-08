@@ -210,7 +210,7 @@ func (s *RecService) Rows(view string) (Recommendations, error) {
 		return Recommendations{}, err
 	}
 	p := s.profile(games, settings, view)
-	ranked := recommend.TagEngine{MinReviews: settings.MinReviews}.Recommend(p, recommend.Pool(games, settings.HoursLimit))
+	ranked := recommend.TagEngine{MinReviews: settings.MinReviews}.Recommend(p, recommend.Pool(games, limits(settings)))
 	return Recommendations{Profile: p, Tailored: recommend.Tailored(ranked), Rows: recommend.Rows(p, ranked)}, nil
 }
 
@@ -325,7 +325,7 @@ func (s *WheelService) pool(f wheel.Filters, bias bool) ([]library.Game, wheel.W
 	if err != nil {
 		return nil, nil, err
 	}
-	pool := wheel.Filter(recommend.Pool(games, settings.HoursLimit), f)
+	pool := wheel.Filter(recommend.Pool(games, limits(settings)), f)
 	if !bias {
 		return pool, nil, nil
 	}
@@ -385,4 +385,9 @@ func (s *SettingsService) Save(in store.Settings) error {
 	}
 	s.C.Emit(EventLibraryChanged, nil)
 	return nil
+}
+
+// limits are the R3 hours limits from settings.
+func limits(s store.Settings) recommend.Limits {
+	return recommend.Limits{Shelved: s.ShelvedHours, Endless: s.EndlessHours}
 }

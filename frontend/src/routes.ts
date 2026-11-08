@@ -21,4 +21,4 @@ export const NAV: { route: Route; label: string }[] = [
 ];
 
 /** Screens reached from inside another highlight that screen in the sidebar. */
-export const PARENT: Partial<Record<Route, Route>> = { pickbackup: "library", hidden: "settings", dead: "settings" };
+export const PARENT: Partial<Record<Route, Route>> = { pickbackup: "home", hidden: "settings", dead: "settings" };

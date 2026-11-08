@@ -265,6 +265,7 @@ input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px;
 .tag-picker-foot { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 12px; }
 .filters .filter-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; color: var(--text-muted); }
 .filters .select { width: 150px; }
+.status-filter { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; margin-top: 6px; }
 
 .empty { padding: 40px; text-align: center; color: var(--text-muted); }
 
@@ -294,6 +295,13 @@ input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px;
   border-radius: var(--radius-sm); box-shadow: var(--shadow);
 }
 .chip.more:hover .more-pop, .chip.more:focus .more-pop { display: flex; }
+
+/* Library: the count on the left, list display options on the right. */
+.list-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.list-head .toolbar { gap: 16px; }
+.sort-by { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+.sort-by .select { padding-top: 6px; padding-bottom: 6px; }
+.list-head .sort-dir { margin-left: -10px; padding: 6px; display: inline-flex; }
 
 /* ---- single-line filter bars: controls shrink instead of wrapping ---- */
 

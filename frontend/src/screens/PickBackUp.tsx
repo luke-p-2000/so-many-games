@@ -15,7 +15,7 @@ export function PickBackUp() {
 
   return (
     <div className="page">
-      <h1>Resume shelved games</h1>
+      <h1>Shelved games</h1>
       <p className="subtle">Every Shelved and Endless game you started and put down, at any hours. Mark one Playing to pick it back up.</p>
       <Segmented label="Order" value={order} onChange={setOrder} options={[{ value: "untouched", label: "Longest untouched" }, { value: "hours", label: "Most hours" }]} />
       {!backUp.loading && items.length === 0 && <div className="panel empty">No Shelved or Endless games.</div>}

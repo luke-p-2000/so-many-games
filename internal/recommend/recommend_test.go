@@ -25,7 +25,7 @@ func reviewed(g library.Game, pct, count int) library.Game {
 }
 
 func TestEligiblePool(t *testing.T) {
-	limit := 10
+	limit := Limits{Shelved: 10, Endless: 3}
 	cases := []struct {
 		name string
 		g    library.Game
@@ -36,7 +36,8 @@ func TestEligiblePool(t *testing.T) {
 		{"shelved under limit", game(3, library.Shelved, 9*60), true},
 		{"shelved at limit", game(4, library.Shelved, 10*60), false},
 		{"endless under limit", game(5, library.Endless, 60), true},
-		{"endless over limit", game(6, library.Endless, 20*60), false},
+		{"endless over its own limit", game(6, library.Endless, 5*60), false},
+		{"shelved at endless limit", game(13, library.Shelved, 5*60), true},
 		{"playing few hours", game(7, library.Playing, 10), false},
 		{"finished", game(8, library.Finished, 0), false},
 		{"not for me", game(9, library.NotForMe, 0), false},

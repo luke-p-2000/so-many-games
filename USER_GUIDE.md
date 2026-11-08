@@ -62,9 +62,9 @@ Every game has one status. Change it with the row of icons on a game (hover an i
 | **Stats** | Games by status, your backlog over time, hours by tag and genre, games finished per year, and ratings |
 | **Settings** | Steam profile, API key and sync; which games can be recommended; taste tags; status rules; hidden and dead games; backups |
 
-### Library
+### Home
 
-**Resume shelved games** lists Shelved and Endless games you stopped playing, longest untouched first.
+**Shelved games** lists Shelved and Endless games you stopped playing, longest untouched first.
 
 ### Recommendations
 
@@ -80,7 +80,7 @@ Every game has one status. Change it with the row of icons on a game (hover an i
 
 ### Wheel
 
-- **Filters:** tags (a game must have every tag you pick), genre, review score, and type (single-player, co-op or PvP).
+- **Filters:** tags (a game must have every tag you pick), genre, review score, type (single-player, co-op or PvP), and status (tick any of Unplayed, To play, Shelved and Endless).
 - **Size:** choose how many games the wheel holds.
 - **Bias toward my taste:** favours games like the ones you play.
 - **After a spin:** mark the winner Playing or Not for me, or spin again.

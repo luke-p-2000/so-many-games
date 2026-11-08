@@ -63,7 +63,7 @@ Two provider families, both behind interfaces. Endpoints were confirmed by the s
 
 Both read one shared pool so they can never disagree about what is eligible.
 
-**Pool (R3).** Not hidden, classified, and not Finished, Not for me, Dead or Playing; either Unplayed or To play at any hours, or Shelved or Endless under the hours limit (10, adjustable). The Pick back up view (R7) does not use this rule: it lists every Shelved and Endless game at any hours, ordered by last played.
+**Pool (R3).** Not hidden, classified, and not Finished, Not for me, Dead or Playing; either Unplayed or To play at any hours, or Shelved or Endless under their own hours limit (each 10, adjustable separately). The Pick back up view (R7) does not use this rule: it lists every Shelved and Endless game at any hours, ordered by last played.
 
 **Engine interface.**
 
@@ -83,11 +83,11 @@ type Engine interface {
 
 The AI and local-model engines later implement the same interface, receiving the profile and pool and returning ranked games with reasons. Shown, opened and dismissed recommendations go to the event log.
 
-**Wheel.** Filters (tags, all of which must match; genre; review score; and Type: single-player, co-op or PvP) each default to All and narrow the pool by AND. `Draw` fills the wheel with the configured size (12, 15, 18, 24 or All) at random whenever filters or size change; `Pick` spins it, choosing among the games shown. The taste-bias switch weights both by the recommender score. Result actions write status and event changes through `library`.
+**Wheel.** Filters (tags, all of which must match; genre; review score; Type: single-player, co-op or PvP; and status, any of the ticked pool statuses) each default to All and narrow the pool by AND. `Draw` fills the wheel with the configured size (12, 15, 18, 24 or All) at random whenever filters or size change; `Pick` spins it, choosing among the games shown. The taste-bias switch weights both by the recommender score. Result actions write status and event changes through `library`.
 
 ## Frontend
 
-React and TypeScript, one route per sidebar item plus Classify, Pick back up (labelled Resume shelved games), Hidden and Dead games; the mocks are the visual reference (dark theme, Inter and Space Grotesk).
+React and TypeScript, one route per sidebar item plus Classify, Pick back up (labelled Shelved games), Hidden and Dead games; the mocks are the visual reference (dark theme, Inter and Space Grotesk).
 
 - **State.** Server state comes from Wails calls, held in a small query cache; events (sync progress, fetch progress) update it. No global store beyond that.
 - **Status control.** One `StatusRadio` component with a `full` mode (eight icon radios, label on hover) and a `compact` mode (current icon, expands on hover). Library, Home, Recommendations and Classify all use it. Changes call `SetStatus` and show an undo toast; in Classify they update local staged state until Save all.

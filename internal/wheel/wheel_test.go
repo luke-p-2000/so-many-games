@@ -33,6 +33,10 @@ func TestFilterDefaultsToAll(t *testing.T) {
 	if got := Filter(pool, Filters{Type: "co-op"}); len(got) != 1 || got[0].AppID != 2 {
 		t.Fatalf("type filter = %v", got)
 	}
+	pool[0].Status, pool[1].Status, pool[2].Status = library.Shelved, library.Unplayed, library.Endless
+	if got := Filter(pool, Filters{Status: []string{"shelved", "endless"}}); len(got) != 2 || got[0].AppID != 1 || got[1].AppID != 3 {
+		t.Fatalf("status filter = %v", got)
+	}
 	if got := Filter(pool, Filters{Type: "single-player", Tags: []string{"Shooter"}}); len(got) != 0 {
 		t.Fatalf("filters must AND: %v", got)
 	}

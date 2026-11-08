@@ -59,7 +59,7 @@ func Compute(db *sql.DB, games []library.Game, s store.Settings, now time.Time) 
 		out.StatusCounts = append(out.StatusCounts, Bar{string(st), float64(byStatus[st])})
 	}
 
-	out.BacklogSize, out.BacklogHours = backlog(counted, s.HoursLimit)
+	out.BacklogSize, out.BacklogHours = backlog(counted, limits(s))
 
 	since := recommend.RecentSince(now, s.RecentMonths)
 	out.TagHoursAll = hoursBy(counted, nil, func(g library.Game) []string { return g.Tags })
@@ -197,15 +197,19 @@ func burnDown(db *sql.DB) ([]Bar, error) {
 
 // LogBacklog records today's backlog for the burn-down; called after each sync.
 func LogBacklog(db *sql.DB, games []library.Game, s store.Settings, now time.Time) error {
-	size, hours := backlog(games, s.HoursLimit)
+	size, hours := backlog(games, limits(s))
 	return events.Log(db, now, events.BacklogSnapshot, 0, map[string]any{"size": size, "hours": hours})
 }
 
 // backlog is the eligible pool's size and played hours (ADR 0008).
-func backlog(games []library.Game, hoursLimit int) (size int, hours float64) {
-	pool := recommend.Pool(games, hoursLimit)
+func backlog(games []library.Game, l recommend.Limits) (size int, hours float64) {
+	pool := recommend.Pool(games, l)
 	for _, g := range pool {
 		hours += g.Hours()
 	}
 	return len(pool), hours
+}
+
+func limits(s store.Settings) recommend.Limits {
+	return recommend.Limits{Shelved: s.ShelvedHours, Endless: s.EndlessHours}
 }

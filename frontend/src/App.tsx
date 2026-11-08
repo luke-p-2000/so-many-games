@@ -42,7 +42,7 @@ function Version() {
 function Screen({ route, go }: { route: Route; go: (r: Route) => void }) {
   switch (route) {
     case "home": return <Home go={go} />;
-    case "library": return <Library go={go} />;
+    case "library": return <Library />;
     case "recommendations": return <Recommendations go={go} />;
     case "wheel": return <Wheel />;
     case "stats": return <Stats />;

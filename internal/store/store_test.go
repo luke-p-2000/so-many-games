@@ -56,11 +56,11 @@ func TestSettingsDefaultsAndRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if s.HoursLimit != 10 || s.MinReviews != 50 || s.AbandonedDays != 60 || len(s.HiddenPatterns) != 9 {
+	if s.ShelvedHours != 10 || s.EndlessHours != 10 || s.MinReviews != 50 || s.AbandonedDays != 60 || len(s.HiddenPatterns) != 9 {
 		t.Fatalf("defaults wrong: %+v", s)
 	}
 
-	s.HoursLimit = 15
+	s.ShelvedHours, s.EndlessHours = 15, 4
 	s.Pinned = []string{"Roguelike"}
 	if err := SaveSettings(db, s); err != nil {
 		t.Fatal(err)
@@ -69,7 +69,7 @@ func TestSettingsDefaultsAndRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got.HoursLimit != 15 || len(got.Pinned) != 1 || got.Pinned[0] != "Roguelike" {
+	if got.ShelvedHours != 15 || got.EndlessHours != 4 || len(got.Pinned) != 1 || got.Pinned[0] != "Roguelike" {
 		t.Fatalf("round trip lost data: %+v", got)
 	}
 
@@ -92,5 +92,30 @@ func TestSnapshotWritesCopy(t *testing.T) {
 	}
 	if fi, err := os.Stat(dest); err != nil || fi.Size() == 0 {
 		t.Fatalf("snapshot missing: %v", err)
+	}
+}
+
+func TestLegacyHoursLimitCarriesOver(t *testing.T) {
+	db, err := Open(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	if _, err := db.Exec(`INSERT INTO setting (key, value) VALUES ('hours_limit', '7')`); err != nil {
+		t.Fatal(err)
+	}
+	s, err := LoadSettings(db)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if s.ShelvedHours != 7 || s.EndlessHours != 7 {
+		t.Fatalf("old limit not carried over: %+v", s)
+	}
+	if err := SaveSettings(db, s); err != nil {
+		t.Fatal(err)
+	}
+	var n int
+	if err := db.QueryRow(`SELECT COUNT(*) FROM setting WHERE key = 'hours_limit'`).Scan(&n); err != nil || n != 0 {
+		t.Fatalf("legacy key left behind: n=%d err=%v", n, err)
 	}
 }

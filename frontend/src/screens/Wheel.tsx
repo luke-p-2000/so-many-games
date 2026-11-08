@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { list, type Filters, Status, WheelService, type Game, type WheelDraw } from "../api";
 import { useGames, useQuery, useRefresh } from "../data";
+import { statusLabel } from "../statuses";
 import { useReportError, useSetStatus } from "../toast";
 
 const COLOURS = ["#7d2f3a", "#3c6e4c", "#6d4b2e", "#2e4a78", "#5b3a73", "#2f6a6f", "#7a5a24", "#4a4f5e"];
@@ -103,6 +104,7 @@ export function Wheel() {
             <FilterSelect label="Review score" value={String(filters.minReviewPct || "")} onChange={(v) => update({ minReviewPct: Number(v) || 0 })}
               options={[["70", "70%+"], ["80", "80%+"], ["90", "90%+"]]} />
             <FilterSelect label="Type" value={filters.type} onChange={(v) => update({ type: v })} options={TYPES} />
+            <StatusFilter value={list(filters.status)} onChange={(v) => update({ status: v })} />
             <label className="check"><input type="checkbox" checked={bias} onChange={(e) => setBias(e.target.checked)} /> Bias toward my taste</label>
             <div className="slider-field">
               <div className="filter-row"><span>Wheel size</span><b>{size === null ? "…" : size || "All"}</b></div>
@@ -118,7 +120,28 @@ export function Wheel() {
 }
 
 /** Every filter starts at All (W1). */
-const NO_FILTERS: Filters = { tags: [], genre: "", minReviewPct: 0, type: "" };
+const NO_FILTERS: Filters = { tags: [], genre: "", minReviewPct: 0, type: "", status: [] };
+
+/** The statuses that can be in the eligible pool (R3). */
+const POOL_STATUSES = [Status.Unplayed, Status.ToPlay, Status.Shelved, Status.Endless];
+
+/** Any of the ticked statuses; none ticked means All. */
+function StatusFilter({ value, onChange }: { value: string[]; onChange: (v: string[]) => void }) {
+  const toggle = (s: string) => onChange(value.includes(s) ? value.filter((x) => x !== s) : [...value, s]);
+  return (
+    <div role="group" aria-label="Status">
+      <div className="filter-row">
+        <span>Status</span>
+        <button type="button" className="link" disabled={!value.length} onClick={() => onChange([])}>{value.length ? "Clear" : "All"}</button>
+      </div>
+      <div className="status-filter">
+        {POOL_STATUSES.map((s) => (
+          <label key={s} className="check"><input type="checkbox" checked={value.includes(s)} onChange={() => toggle(s)} /> {statusLabel(s)}</label>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 /** Steam player categories (internal/wheel Types). */
 const TYPES: [string, string][] = [["single-player", "Single-player"], ["co-op", "Co-op"], ["pvp", "PvP"]];

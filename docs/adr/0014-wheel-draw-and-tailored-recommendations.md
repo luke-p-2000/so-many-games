@@ -14,4 +14,4 @@ Status: Accepted · 2026-11-07 (owner feedback after the second build)
 - The To play button on recommendation cards (ADR 0013) is removed; the compact status control covers it.
 
 ## Naming
-- The Pick back up view (R7) is labelled **Resume shelved games**, with a tooltip saying what it lists. The requirement id and route keep the old name.
+- The Pick back up view (R7) is labelled **Shelved games** (originally "Resume shelved games"), reached from Home only, with a tooltip saying what it lists. The requirement id and route keep the old name.

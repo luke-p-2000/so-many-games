@@ -18,6 +18,7 @@ type Filters struct {
 	Genre        string   `json:"genre"`
 	MinReviewPct int      `json:"minReviewPct"`
 	Type         string   `json:"type"` // one of Types: games with that Steam player category
+	Status       []string `json:"status"` // games with any of these statuses
 }
 
 // Filter returns the pool games that pass every filter.
@@ -34,6 +35,9 @@ func Filter(pool []library.Game, f Filters) []library.Game {
 			continue
 		}
 		if f.Type != "" && !slices.Contains(g.Categories, f.Type) {
+			continue
+		}
+		if len(f.Status) > 0 && !slices.Contains(f.Status, string(g.Status)) {
 			continue
 		}
 		out = append(out, g)
