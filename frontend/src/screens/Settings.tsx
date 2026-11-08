@@ -79,7 +79,7 @@ export function Settings({ go }: { go: (r: Route) => void }) {
         <Row label="Back up" value="Save a copy of the database (never includes the API key).">
           <button className="btn" onClick={() => DataService.Backup().then((p) => toast({ message: `Saved ${p}` }), quiet(report))}>Back up</button>
         </Row>
-        <Row label="Export" value="Statuses, ratings, hidden flags, tag settings and history as JSON.">
+        <Row label="Export" value="Statuses, ratings, finished dates, hidden flags, tag settings, tier list and history as JSON.">
           <button className="btn" onClick={() => DataService.Export().then((p) => toast({ message: `Exported to ${p}` }), quiet(report))}>Export</button>
         </Row>
         <ImportRow onDone={refresh} />
@@ -210,7 +210,7 @@ function ImportRow({ onDone }: { onDone: () => void }) {
   const toast = useToast();
   return (
     <>
-      <Row label="Import" value="Replace statuses, ratings, hidden flags, tag settings and history from an export.">
+      <Row label="Import" value="Replace statuses, ratings, finished dates, hidden flags, tag settings, tier list and history from an export.">
         <button className="btn" onClick={() => DataService.PreviewImport().then(setSummary, quiet(report))}>Import…</button>
       </Row>
       {summary && (

@@ -261,3 +261,76 @@ func unclassified(t *testing.T, db *sql.DB) int {
 	}
 	return n
 }
+
+func TestFinishedDateIsSetClearedAndRestored(t *testing.T) {
+	svc, settings := newService(t)
+	if _, err := svc.Import([]steam.Owned{{AppID: 1, Name: "A"}, {AppID: 2, Name: "B"}}, settings); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.SetStatus([]int{1}, Finished); err != nil {
+		t.Fatal(err)
+	}
+	if g := gameByID(t, svc.DB, 1); g.FinishedAt == nil || *g.FinishedAt != "2026-11-07" {
+		t.Fatalf("finishing should date it today: %v", g.FinishedAt)
+	}
+	if err := svc.SetFinishedAt(1, "2024-05-02"); err != nil {
+		t.Fatal(err)
+	}
+	for _, bad := range []string{"2026-11-08", "5/2/2024"} {
+		if err := svc.SetFinishedAt(1, bad); err == nil {
+			t.Errorf("date %q should be rejected", bad)
+		}
+	}
+	if err := svc.SetFinishedAt(2, "2024-05-02"); err == nil {
+		t.Error("only Finished games take a finished date")
+	}
+
+	before, err := svc.SetStatus([]int{1}, Shelved)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if g := gameByID(t, svc.DB, 1); g.FinishedAt != nil {
+		t.Fatalf("leaving Finished should clear the date: %v", *g.FinishedAt)
+	}
+	if err := svc.Restore(before); err != nil {
+		t.Fatal(err)
+	}
+	if g := gameByID(t, svc.DB, 1); g.FinishedAt == nil || *g.FinishedAt != "2024-05-02" {
+		t.Fatalf("undo should restore the backfilled date: %v", g.FinishedAt)
+	}
+	if err := svc.SetFinishedAt(1, ""); err != nil {
+		t.Fatal(err)
+	}
+	if g := gameByID(t, svc.DB, 1); g.FinishedAt != nil {
+		t.Fatal("an empty date means unknown")
+	}
+}
+
+func TestTiersReplaceAndValidate(t *testing.T) {
+	svc, settings := newService(t)
+	if _, err := svc.Import([]steam.Owned{{AppID: 1, Name: "A"}, {AppID: 2, Name: "B"}}, settings); err != nil {
+		t.Fatal(err)
+	}
+	if err := SaveTiers(svc.DB, []TierEntry{{1, "S", 0}, {2, "S", 1}, {99, "A", 0}}); err != nil {
+		t.Fatal(err)
+	}
+	got, err := LoadTiers(svc.DB)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 2 || got[0].AppID != 1 || got[1].AppID != 2 {
+		t.Fatalf("tiers = %+v (unknown games are dropped)", got)
+	}
+	if err := SaveTiers(svc.DB, []TierEntry{{2, "F", 0}}); err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := LoadTiers(svc.DB); len(got) != 1 || got[0].Tier != "F" {
+		t.Fatalf("saving should replace the list: %+v", got)
+	}
+	if err := SaveTiers(svc.DB, []TierEntry{{1, "Z", 0}}); err == nil {
+		t.Error("unknown tier should be rejected")
+	}
+	if got, _ := LoadTiers(svc.DB); len(got) != 1 {
+		t.Fatal("a rejected save should leave the list as it was")
+	}
+}

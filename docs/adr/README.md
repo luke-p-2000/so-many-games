@@ -10,7 +10,7 @@ One file per decision, numbered in order. Status is Proposed until the owner con
 | [0004](0004-spike-key-storage.md) | Spike probe keeps its key in Credential Manager | Superseded |
 | [0005](0005-time-to-beat-deferred.md) | Time-to-beat is deferred | Accepted |
 | [0006](0006-metadata-provider-chain.md) | Metadata providers: store browse API first, no scraping or SteamSpy | Accepted |
-| [0007](0007-finished-per-year.md) | Games finished per year counts from status changes | Accepted |
+| [0007](0007-finished-per-year.md) | Games finished per year counts from status changes | Superseded by 0016 |
 | [0008](0008-backlog-definition.md) | What counts as the backlog | Accepted |
 | [0009](0009-recent-window-and-abandoned-use-last-played.md) | Recent views and Abandoned use Steam's last-played date | Accepted |
 | [0010](0010-minimum-reviews-setting.md) | Minimum reviews is a setting | Accepted |
@@ -19,3 +19,5 @@ One file per decision, numbered in order. Status is Proposed until the owner con
 | [0013](0013-dead-status-and-ui-feedback.md) | Dead status and first UI feedback | Accepted |
 | [0014](0014-wheel-draw-and-tailored-recommendations.md) | Wheel draw, multi-tag filter and Tailored for you | Accepted |
 | [0015](0015-ratings-weight-the-taste-profile.md) | Ratings and Not for me weight the taste profile | Accepted |
+| [0016](0016-stats-redesign-finished-cards-and-tier-list.md) | Stats redesign, finished dates and cards, and the tier list | Accepted |
+| [0017](0017-visual-uplift.md) | Visual uplift across the app | Accepted |

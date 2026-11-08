@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { SetupService } from "./api";
 import logo from "./assets/logo.svg";
+import { NavIcon } from "./components/NavIcon";
 import { useGames, useQuery } from "./data";
+import { useTotals } from "./totals";
 import { NAV, PARENT, type Route } from "./routes";
 import { Classify } from "./screens/Classify";
 import { Dead } from "./screens/Dead";
@@ -10,9 +12,11 @@ import { Home } from "./screens/Home";
 import { Library } from "./screens/Library";
 import { Onboarding } from "./screens/Onboarding";
 import { PickBackUp } from "./screens/PickBackUp";
+import { RecentlyFinished } from "./screens/RecentlyFinished";
 import { Recommendations } from "./screens/Recommendations";
 import { Settings } from "./screens/Settings";
 import { Stats } from "./screens/Stats";
+import { TierList } from "./screens/TierList";
 import { Wheel } from "./screens/Wheel";
 
 export default function App() {
@@ -49,6 +53,8 @@ function Screen({ route, go }: { route: Route; go: (r: Route) => void }) {
     case "settings": return <Settings go={go} />;
     case "classify": return <Classify go={go} />;
     case "pickbackup": return <PickBackUp />;
+    case "finished": return <RecentlyFinished />;
+    case "tiers": return <TierList />;
     case "hidden": return <Hidden />;
     case "dead": return <Dead />;
   }
@@ -65,11 +71,26 @@ function Sidebar({ route, go, connected }: { route: Route; go: (r: Route) => voi
       <img className="brand" src={logo} alt="So Many Games" />
       {connected && items.map((item) => (
         <button key={item.route} className="nav-item" aria-current={active === item.route ? "page" : undefined} onClick={() => go(item.route)}>
-          {item.label}
+          <NavIcon route={item.route} />
+          <span className="nav-label">{item.label}</span>
           {item.route === "classify" && <span className="nav-badge">{unclassified}</span>}
         </button>
       ))}
       <div className="sidebar-foot">Not affiliated with Valve.</div>
+      {connected && <SidebarTotals go={go} />}
     </nav>
+  );
+}
+
+/** Finished and backlog at a glance, under the footer; opens Stats. */
+function SidebarTotals({ go }: { go: (r: Route) => void }) {
+  const t = useTotals();
+  if (!t) return null;
+  return (
+    <button className="side-totals" onClick={() => go("stats")} title="Open Stats">
+      <span className="row"><span>Finished</span><b>{t.finished} <small>/ {t.total}</small></b></span>
+      <span className="meter" aria-hidden><span style={{ width: `${t.finishedPct}%` }} /></span>
+      <span className="row"><span>Backlog</span><b>{t.backlog}</b></span>
+    </button>
   );
 }

@@ -37,6 +37,9 @@ func TestExportImportRoundTrip(t *testing.T) {
 	if err := src.SetRating(1, &nine); err != nil {
 		t.Fatal(err)
 	}
+	if err := library.SaveTiers(src.DB, []library.TierEntry{{AppID: 1, Tier: "A", Position: 0}}); err != nil {
+		t.Fatal(err)
+	}
 	s, _ := store.LoadSettings(src.DB)
 	s.Pinned = []string{"Roguelike"}
 	if err := store.SaveSettings(src.DB, s); err != nil {
@@ -70,6 +73,12 @@ func TestExportImportRoundTrip(t *testing.T) {
 	games, _ := library.Load(dst.DB)
 	if games[0].AppID != 1 || games[0].Status != library.Finished || games[0].Rating == nil || *games[0].Rating != 9 {
 		t.Fatalf("imported game = %+v", games[0])
+	}
+	if games[0].FinishedAt == nil || *games[0].FinishedAt != "2026-11-07" {
+		t.Fatalf("finished date not imported: %v", games[0].FinishedAt)
+	}
+	if tiers, _ := library.LoadTiers(dst.DB); len(tiers) != 1 || tiers[0].Tier != "A" {
+		t.Fatalf("tiers not imported: %+v", tiers)
 	}
 	got, _ := store.LoadSettings(dst.DB)
 	if len(got.Pinned) != 1 {

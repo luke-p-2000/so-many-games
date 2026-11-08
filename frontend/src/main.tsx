@@ -8,13 +8,16 @@ import "@fontsource/space-grotesk/700.css";
 import "./styles.css";
 import App from "./App";
 import { DataProvider } from "./data";
+import { FinishedCardProvider } from "./components/FinishedCard";
 import { ToastProvider } from "./toast";
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
     <DataProvider>
       <ToastProvider>
-        <App />
+        <FinishedCardProvider>
+          <App />
+        </FinishedCardProvider>
       </ToastProvider>
     </DataProvider>
   </React.StrictMode>,

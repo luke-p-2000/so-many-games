@@ -107,6 +107,29 @@ func (s *LibraryService) SetCompleted(appid int, completed bool) error {
 	return s.C.Library.SetCompleted(appid, completed)
 }
 
+// SetFinishedAt sets a Finished game's finished date (YYYY-MM-DD), or "" for unknown.
+func (s *LibraryService) SetFinishedAt(appid int, date string) error {
+	return s.C.Library.SetFinishedAt(appid, date)
+}
+
+// ---- Tier list (T2) ----
+
+func (s *LibraryService) Tiers() ([]library.TierEntry, error) { return library.LoadTiers(s.C.DB) }
+
+func (s *LibraryService) SetTiers(entries []library.TierEntry) error {
+	return library.SaveTiers(s.C.DB, entries)
+}
+
+// SetTierEndless remembers whether the tier list offers Endless games too.
+func (s *LibraryService) SetTierEndless(on bool) error {
+	settings, err := s.C.Settings()
+	if err != nil {
+		return err
+	}
+	settings.TierEndless = on
+	return store.SaveSettings(s.C.DB, settings)
+}
+
 // Staged is one Classify-screen choice.
 type Staged struct {
 	AppID  int    `json:"appid"`
@@ -350,7 +373,7 @@ func (s *StatsService) Stats() (stats.Stats, error) {
 	if err != nil {
 		return stats.Stats{}, err
 	}
-	return stats.Compute(s.C.DB, games, settings, s.C.now())
+	return stats.Compute(games, settings, s.C.now()), nil
 }
 
 // ---- Settings (G1) ----

@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { list, type Filters, Status, WheelService, type Game, type WheelDraw } from "../api";
+import { hours, list, type Filters, Status, WheelService, type Game, type WheelDraw } from "../api";
+import { Cover } from "../components/bits";
+import { reviewsShort, scoreTone } from "../components/GameCards";
 import { useGames, useQuery, useRefresh } from "../data";
-import { statusLabel } from "../statuses";
+import { StatusIcon, statusLabel, statusStyle } from "../statuses";
 import { useReportError, useSetStatus } from "../toast";
 
-const COLOURS = ["#7d2f3a", "#3c6e4c", "#6d4b2e", "#2e4a78", "#5b3a73", "#2f6a6f", "#7a5a24", "#4a4f5e"];
+/** Wedge hues from the status palette, drawn faint; the winning wedge lights up. */
+const COLOURS = ["#e8b04b", "#5b9cf5", "#a685e8", "#3fc1c0", "#e66a5c", "#8fcf6e"];
 /** Allowed sizes in slider order; 0 means All (W2). */
 const SIZES = [12, 15, 18, 24, 0];
 const spinMs = () => (window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 4300);
@@ -74,26 +77,20 @@ export function Wheel() {
     <div className="page">
       <h1>Wheel</h1>
       <div className="wheel-layout">
-        <div className="wheel-stage">
-          {size === 0 ? <Reel entries={entries} winner={winner} spins={spins} /> : <WheelSvg entries={entries} winner={winner} spins={spins} />}
+        <div className="wheel-main">
+          <div className="wheel-stage">
+            {size === 0 ? <Reel entries={entries} winner={winner} spins={spins} />
+              : <WheelSvg entries={entries} winner={winner} spins={spins} landed={!!result} onSpin={spin} spinning={spinning} />}
+            {result ? <Winner game={result} onPlay={() => act(Status.Playing)} onAgain={spin} onNotForMe={() => act(Status.NotForMe)} />
+              : <div className="winner-placeholder">{spinning ? "Spinning…" : empty ? "No eligible games match these filters." : "Spin the wheel to pick a game."}</div>}
+          </div>
           <div className="toolbar">
-            <button className="btn primary" onClick={spin} disabled={spinning || !entries.length}>Spin</button>
+            {size === 0 && <button className="btn primary" onClick={spin} disabled={spinning || !entries.length}>Spin</button>}
             {size !== 0 && draw.data && draw.data.poolSize > entries.length && (
               <button className="btn" onClick={() => setRedraws((n) => n + 1)} disabled={spinning}>New games</button>
             )}
             {draw.data && <span className="faint">{draw.data.poolSize} eligible {draw.data.poolSize === 1 ? "game" : "games"}</span>}
           </div>
-          {empty && <p className="subtle">No eligible games match these filters.</p>}
-          {result && (
-            <section className="panel" aria-live="polite" style={{ minWidth: 360 }}>
-              <h2 style={{ marginBottom: 12 }}>Result: {result.name}</h2>
-              <div className="toolbar">
-                <button className="btn primary" onClick={() => act(Status.Playing)}>Mark Playing</button>
-                <button className="btn" onClick={spin}>Spin again</button>
-                <button className="btn" onClick={() => act(Status.NotForMe)}>Not for me</button>
-              </div>
-            </section>
-          )}
         </div>
 
         <aside className="panel filters" aria-label="Wheel filters">
@@ -136,7 +133,7 @@ function StatusFilter({ value, onChange }: { value: string[]; onChange: (v: stri
       </div>
       <div className="status-filter">
         {POOL_STATUSES.map((s) => (
-          <label key={s} className="check"><input type="checkbox" checked={value.includes(s)} onChange={() => toggle(s)} /> {statusLabel(s)}</label>
+          <label key={s} className="check status-check" style={statusStyle(s)}><input type="checkbox" checked={value.includes(s)} onChange={() => toggle(s)} /> <StatusIcon status={s} size={14} /> {statusLabel(s)}</label>
         ))}
       </div>
     </div>
@@ -219,7 +216,9 @@ function TagPicker({ tags, value, onChange }: { tags: string[]; value: string[];
 }
 
 /** Wedges; each spin turns forward several times and stops with the winner under the top pointer. */
-function WheelSvg({ entries, winner, spins }: { entries: Game[]; winner: number; spins: number }) {
+function WheelSvg({ entries, winner, spins, landed, onSpin, spinning }: {
+  entries: Game[]; winner: number; spins: number; landed: boolean; onSpin: () => void; spinning: boolean;
+}) {
   const n = Math.max(entries.length, 1);
   const slice = 360 / n;
   const [angle, setAngle] = useState(0);
@@ -241,20 +240,51 @@ function WheelSvg({ entries, winner, spins }: { entries: Game[]; winner: number;
           {entries.map((g, i) => {
             const [x1, y1] = point(i * slice), [x2, y2] = point((i + 1) * slice);
             const mid = i * slice + slice / 2;
+            const won = landed && i === winner;
             const path = n === 1 ? "M100,0 A100,100 0 1,1 99.99,0 Z" : `M100,100 L${x1},${y1} A100,100 0 ${slice > 180 ? 1 : 0},1 ${x2},${y2} Z`;
             return (
               <g key={g.appid}>
-                <path d={path} fill={COLOURS[i % COLOURS.length]} stroke="var(--bg)" strokeWidth="0.6" />
-                <text x="100" y="100" transform={`rotate(${mid - 90} 100 100) translate(30 0)`} fill="#f3f3f5" fontSize={n > 18 ? 4.2 : 5.2} dominantBaseline="middle">
+                <path d={path} fill={COLOURS[i % COLOURS.length]} fillOpacity={won ? 0.95 : 0.22} stroke="var(--bg)" strokeWidth="1.2" />
+                <text x="100" y="100" transform={`rotate(${mid - 90} 100 100) translate(30 0)`} fill={won ? "#1a1408" : "#f3f3f5"}
+                  fontWeight={won ? 700 : 600} fontSize={n > 18 ? 4.2 : 5.2} dominantBaseline="middle">
                   {g.name.length > 24 ? g.name.slice(0, 23) + "…" : g.name}
                 </text>
               </g>
             );
           })}
         </g>
+        <circle cx="100" cy="100" r="99.5" fill="none" stroke="var(--accent)" strokeOpacity="0.5" strokeWidth="0.8" />
       </svg>
       <div className="wheel-pointer" aria-hidden />
+      <button className="spin-button" onClick={onSpin} disabled={spinning || !entries.length}>Spin</button>
     </div>
+  );
+}
+
+/** The picked game: cover over a blurred copy, score, hours, status and tags, with the next moves. */
+function Winner({ game, onPlay, onAgain, onNotForMe }: { game: Game; onPlay: () => void; onAgain: () => void; onNotForMe: () => void }) {
+  return (
+    <section className="winner" aria-live="polite">
+      {game.cover && <div className="backdrop" style={{ backgroundImage: `url(/covers/${game.cover})` }} aria-hidden />}
+      <div className="body">
+        <div className="kicker">The wheel picked</div>
+        <Cover game={game} />
+        <h2 className="name">{game.name}</h2>
+        <div className="meta">
+          {game.reviewPct !== null && game.reviewCount !== null && (
+            <span><b className={`tone-${scoreTone(game.reviewPct)}`}>{game.reviewPct}%</b> · {reviewsShort(game.reviewCount)} reviews</span>
+          )}
+          <span>{hours(game.minutes)} played</span>
+          <span className="chip" style={{ ...statusStyle(game.status), color: "var(--st)" }}><StatusIcon status={game.status} size={12} /> {statusLabel(game.status)}</span>
+        </div>
+        {list(game.tags).length > 0 && <div className="chips">{list(game.tags).slice(0, 3).map((t) => <span key={t} className="chip accent">{t}</span>)}</div>}
+        <div className="toolbar">
+          <button className="btn primary" onClick={onPlay}><StatusIcon status={Status.Playing} size={14} /> Mark Playing</button>
+          <button className="btn" onClick={onAgain}><span aria-hidden>↻</span> Spin again</button>
+          <button className="btn ghost status-action" style={statusStyle(Status.NotForMe)} onClick={onNotForMe}><StatusIcon status={Status.NotForMe} size={14} /> Not for me</button>
+        </div>
+      </div>
+    </section>
   );
 }
 

@@ -4,7 +4,7 @@ import { FetchBanner } from "../components/Banners";
 import { Segmented } from "../components/bits";
 import { GameRow, GridTile, tagLine, UnavailableToggle } from "../components/GameCards";
 import { useGames, useRefresh } from "../data";
-import { STATUSES, type StatusValue } from "../statuses";
+import { STATUSES, StatusIcon, statusLabel, statusStyle, type StatusValue } from "../statuses";
 import { useReportError, useSetStatus, useToast } from "../toast";
 
 type Sort = "name" | "hours" | "lastPlayed" | "review" | "release";
@@ -80,6 +80,8 @@ export function Library() {
       .sort(compare(sort, desc));
   }, [all, search, status, tag, genre, hoursRange, minReview, sort, desc, showHidden]);
 
+  // The hours bar is on a square-root scale against the most played game, so short games still show.
+  const maxMinutes = Math.max(1, ...all.map((g) => g.minutes));
   const toggle = (id: number, on: boolean) => setSelected((s) => { const n = new Set(s); on ? n.add(id) : n.delete(id); return n; });
   const ids = [...selected];
 
@@ -152,8 +154,11 @@ export function Library() {
               game={g}
               selected={selected.has(g.appid)}
               onSelect={(on) => toggle(g.appid, on)}
-              sub={<>{tagLine(g)}{g.hidden && <> · hidden ({g.hiddenReason})</>}{!g.classified && <> · unclassified</>}</>}
-              numbers={<><span><b>{hours(g.minutes)}</b></span><span style={{ minWidth: 150 }}>{lastPlayedText(g.lastPlayed).replace("last played ", "")}</span></>}
+              sub={<><span className="row-status" style={statusStyle(g.status)}><StatusIcon status={g.status} size={12} />{statusLabel(g.status)}</span> · {tagLine(g)}{g.hidden && <> · hidden ({g.hiddenReason})</>}{!g.classified && <> · unclassified</>}</>}
+              numbers={<>
+                <span className="hours-cell"><b>{hours(g.minutes)}</b><span className="hours-bar" aria-hidden><span style={{ width: `${Math.min(100, Math.sqrt(g.minutes / maxMinutes) * 100)}%` }} /></span></span>
+                <span style={{ minWidth: 150 }}>{lastPlayedText(g.lastPlayed).replace("last played ", "")}</span>
+              </>}
               extra={<UnavailableToggle game={g} />}
             />
           ))}

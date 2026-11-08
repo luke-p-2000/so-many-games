@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { list, RecService, recSections, type Recommendations as Recs } from "../api";
+import { list, RecService, recSections, Status, type Recommendations as Recs } from "../api";
 import { FetchBanner } from "../components/Banners";
-import { Segmented } from "../components/bits";
+import { EmptyState, Segmented } from "../components/bits";
 import { RecSections } from "../components/RecSections";
 import { useQuery } from "../data";
 import type { Route } from "../routes";
@@ -23,19 +23,21 @@ export function Recommendations({ go }: { go: (r: Route) => void }) {
       <FetchBanner />
       {profile.length > 0 && (
         <div className="toolbar">
-          <span className="subtle">Your taste:</span>
-          <div className="chips">
-            {profile.map((t) => <span key={t.name} className={`chip${t.pinned ? "" : " accent"}`}>{t.name}{t.pinned ? " (pinned)" : ""}</span>)}
-          </div>
+          <span className="subtle">Your taste</span>
+          {profile.map((t, i) => (
+            <span key={t.name} className={`taste-chip${t.pinned ? " pinned" : ""}`} title={t.pinned ? "Pinned in Settings" : undefined}>
+              <i>{i + 1}</i>{t.name}{t.pinned && <span className="faint"> pinned</span>}
+            </span>
+          ))}
           <button className="link" onClick={() => go("settings")}>Edit tag lists</button>
         </div>
       )}
       {recs.error && <p className="warn-text">{recs.error}</p>}
       {!recs.loading && empty && (
-        <div className="panel empty">
-          No recommendations yet. They need store data for your games, played hours to build a taste profile, and
-          Unplayed, To play or lightly played Shelved and Endless games with at least the minimum number of reviews.
-        </div>
+        <EmptyState status={Status.ToPlay} title="No recommendations yet">
+          They need store data for your games, played hours to build a taste profile, and Unplayed, To play or lightly
+          played Shelved and Endless games with at least the minimum number of reviews.
+        </EmptyState>
       )}
       <RecSections data={recs.data} />
     </div>

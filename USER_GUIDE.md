@@ -59,12 +59,23 @@ Every game has one status. Change it with the row of icons on a game (hover an i
 | **Library** | Every game, with search, filters, sorting, and a list or grid layout. Tick several games to change their status or hide them at once |
 | **Recommendations** | Games you own but haven't really played, matched to your taste |
 | **Wheel** | A random pick from your unplayed and lightly played games |
-| **Stats** | Games by status, your backlog over time, hours by tag and genre, games finished per year, and ratings |
+| **Stats** | How many games you've finished, games by status, your backlog, hours by genre and tag, and your most played games |
+| **Tier list** | Drag your finished games into S to F tiers |
 | **Settings** | Steam profile, API key and sync; which games can be recommended; taste tags; status rules; hidden and dead games; backups |
 
 ### Home
 
 **Shelved games** lists Shelved and Endless games you stopped playing, longest untouched first.
+
+**Recently finished** lists your Finished games, newest first. Set the date on games you finished before you started using the app.
+
+### Finished cards
+
+When you set a game to Finished, a card pops up showing the game, the date, hours played and which number finished game it is. **Copy image** puts it on the clipboard, ready to paste into a chat. **Save PNG…** saves it as a file. Every Finished game has a **Card** button in the Library and in Recently finished, so you can get the card again or after changing the date.
+
+### Tier list
+
+Drag games from **Unranked** on the right into a tier, between tiers, or back. Tick **Include Endless games** to rank Endless games too. Your tiers are saved as you go.
 
 ### Recommendations
 
@@ -98,7 +109,7 @@ Demos, soundtracks, test servers, tools and other non-games are hidden automatic
 
 - Everything is stored in `%APPDATA%\SoManyGames` on this PC. The app talks only to Steam.
 - **Back up** (Settings) saves a copy of the database.
-- **Export** saves your statuses, ratings, hidden games, tag settings and history to a JSON file. **Import** loads that file, for example on a new PC. Store data isn't exported; the app downloads it again.
+- **Export** saves your statuses, ratings, finished dates, hidden games, tag settings, tier list and history to a JSON file. **Import** loads that file, for example on a new PC. Store data isn't exported; the app downloads it again.
 - Backups and exports never include your API key.
 
 ## Uninstall

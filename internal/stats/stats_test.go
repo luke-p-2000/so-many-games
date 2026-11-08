@@ -9,7 +9,7 @@ import (
 	"somanygames/internal/store"
 )
 
-func TestFinishedPerYearAndBurnDown(t *testing.T) {
+func TestComputeCountsAndLatestFinished(t *testing.T) {
 	db, err := store.Open(t.TempDir())
 	if err != nil {
 		t.Fatal(err)
@@ -34,24 +34,22 @@ func TestFinishedPerYearAndBurnDown(t *testing.T) {
 	}
 
 	games, _ := library.Load(db)
-	if err := LogBacklog(db, games, settings, clock); err != nil {
-		t.Fatal(err)
-	}
-	s, err := Compute(db, games, settings, clock)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(s.FinishedPerYear) != 2 || s.FinishedPerYear[0].Label != BeforeFirstSync || s.FinishedPerYear[1].Label != "2026" {
-		t.Fatalf("finished per year = %+v", s.FinishedPerYear)
-	}
-	total := 0.0
+	s := Compute(games, settings, clock)
+	total, finished := 0.0, 0.0
 	for _, b := range s.StatusCounts {
 		total += b.Value
+		if b.Label == string(library.Finished) {
+			finished = b.Value
+		}
 	}
-	if total != 2 {
+	if total != 2 || finished != 2 {
 		t.Fatalf("hidden game should not count: %+v", s.StatusCounts)
 	}
-	if len(s.BurnDown) != 1 || s.BurnDown[0].Value != 0 {
-		t.Fatalf("burn-down = %+v", s.BurnDown)
+	// The classified game has no known date, so the one finished in the app is latest.
+	if s.LatestFinished == nil || s.LatestFinished.AppID != 2 || *s.LatestFinished.FinishedAt != "2026-03-01" {
+		t.Fatalf("latest finished = %+v", s.LatestFinished)
+	}
+	if len(s.MostPlayed) != 1 || s.MostPlayed[0].AppID != 1 {
+		t.Fatalf("most played = %+v", s.MostPlayed)
 	}
 }

@@ -1,4 +1,5 @@
 import { Status } from "./api";
+import type { CSSProperties } from "react";
 
 export type StatusValue = Exclude<Status, Status.$zero>;
 
@@ -14,6 +15,12 @@ export const STATUSES: { value: StatusValue; label: string }[] = [
 ];
 
 export const statusLabel = (s: Status) => STATUSES.find((x) => x.value === s)?.label ?? s;
+
+/** Each status has its own colour, used wherever the status shows (styles.css --st-*). */
+export const statusColor = (s: Status) => `var(--st-${s})`;
+
+/** Sets --st for a status control or chip, so its CSS can colour by status. */
+export const statusStyle = (s: Status) => ({ "--st": statusColor(s) }) as CSSProperties;
 
 /** 16px stroke icons; colour comes from currentColor. */
 export function StatusIcon({ status, size = 16 }: { status: Status; size?: number }) {

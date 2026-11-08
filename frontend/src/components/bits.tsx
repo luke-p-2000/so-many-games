@@ -1,6 +1,7 @@
 // Small shared presentational pieces.
-import { useState } from "react";
-import type { Bar, Game } from "../api";
+import { useState, type ReactNode } from "react";
+import type { Game, Status } from "../api";
+import { StatusIcon, statusStyle } from "../statuses";
 
 /** Cached cover art, or the game's initials when none was fetched. */
 export function Cover({ game, className = "" }: { game: Pick<Game, "cover" | "name">; className?: string }) {
@@ -26,20 +27,38 @@ export function Rating({ value, onChange, name }: { value: number | null; onChan
   );
 }
 
-/** Horizontal bar chart used on the Stats screen. */
-export function BarList({ bars, format = (v) => v.toLocaleString() }: { bars: Bar[]; format?: (v: number) => string }) {
+/** One bar in a ranked bar list; lead is shown before the label, such as a cover thumbnail. */
+export type RankedBar = { key: string; label: string; value: number; lead?: ReactNode };
+
+/** Ranked horizontal bars used on the Stats screen: rank, label, bar on a track, value. */
+export function BarList({ bars, format = (v) => v.toLocaleString(), unit }: { bars: RankedBar[]; format?: (v: number) => string; unit?: string }) {
   if (!bars.length) return <p className="faint">Nothing yet.</p>;
   const max = Math.max(...bars.map((b) => b.value), 1);
+  const lead = bars.some((b) => b.lead);
   return (
-    <div className="bars">
-      {bars.map((b) => (
-        <div key={b.label} style={{ display: "contents" }}>
-          <span>{b.label}</span>
-          <div className="bar" style={{ width: `${(b.value / max) * 100}%` }} />
-          <span className="num">{format(b.value)}</span>
+    <div className={`bars${lead ? " with-lead" : ""}`}>
+      {bars.map((b, i) => (
+        <div key={b.key} className="bar-row">
+          <span className={`rank${i < 3 ? " top" : ""}`}>{i + 1}</span>
+          {lead && b.lead}
+          <span className="label" title={b.label}>{b.label}</span>
+          <div className="track"><div style={{ width: `${(b.value / max) * 100}%` }} /></div>
+          <span className="num">{format(b.value)}{unit && <span> {unit}</span>}</span>
         </div>
       ))}
     </div>
+  );
+}
+
+/** An empty list: a large status icon in its colour, a title, a sentence and a way forward. */
+export function EmptyState({ status, title, children, actions }: { status: Status; title: string; children?: ReactNode; actions?: ReactNode }) {
+  return (
+    <section className="panel empty-state" style={statusStyle(status)}>
+      <div className="halo" aria-hidden><StatusIcon status={status} size={36} /></div>
+      <h3>{title}</h3>
+      {children && <p>{children}</p>}
+      {actions && <div className="toolbar">{actions}</div>}
+    </section>
   );
 }
 

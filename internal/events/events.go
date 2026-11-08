@@ -8,12 +8,12 @@ import (
 	"time"
 )
 
-// Event kinds. Payloads are JSON, so adding a kind needs no migration.
+// Event kinds. Payloads are JSON, so adding a kind needs no migration. Older logs may also
+// hold backlog_snapshot events, no longer written or read (ADR 0016).
 const (
 	StatusChanged    = "status_changed"    // {"from","to","source"}
 	Rated            = "rated"             // {"rating"}
 	PlaytimeSnapshot = "playtime_snapshot" // {"games","new"} once per sync
-	BacklogSnapshot  = "backlog_snapshot"  // {"size","hours"} once per sync (ADR 0008)
 	RecShown         = "rec_shown"         // {"row"}: the section it was shown in
 	RecOpened        = "rec_opened"
 	RecDismissed     = "rec_dismissed"

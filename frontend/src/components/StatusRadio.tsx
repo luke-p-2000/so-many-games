@@ -1,6 +1,6 @@
 import { useRef, useState, type KeyboardEvent } from "react";
 import type { Status } from "../api";
-import { STATUSES, StatusIcon, statusLabel, type StatusValue } from "../statuses";
+import { STATUSES, StatusIcon, statusLabel, statusStyle, type StatusValue } from "../statuses";
 
 type Props = {
   value: Status;
@@ -34,6 +34,7 @@ export function StatusRadio({ value, onChange, gameName, mode = "full" }: Props)
           role="radio"
           className="status-btn"
           data-status={s.value}
+          style={statusStyle(s.value)}
           aria-checked={s.value === value}
           aria-label={s.label}
           tabIndex={s.value === value ? 0 : -1}
@@ -57,6 +58,7 @@ export function StatusRadio({ value, onChange, gameName, mode = "full" }: Props)
         className="status-btn"
         aria-haspopup="true"
         aria-expanded={open}
+        style={statusStyle(value)}
         aria-label={`${statusLabel(value)}: change status of ${gameName}`}
         onMouseEnter={() => setOpen(true)}
         onClick={() => setOpen((o) => !o)}

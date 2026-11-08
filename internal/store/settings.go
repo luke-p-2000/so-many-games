@@ -19,6 +19,7 @@ type Settings struct {
 	AbandonedDays  int      `json:"abandoned_days"`  // N1
 	ClassifyDays   int      `json:"classify_days"`   // L7 split
 	WheelSize      int      `json:"wheel_size"`      // 12, 15, 18, 24, or 0 for All (W2)
+	TierEndless    bool     `json:"tier_endless"`    // the tier list also offers Endless games (T2)
 	Stoplist       []string `json:"stoplist"`        // R1
 	Pinned         []string `json:"pinned"`          // R2
 	Avoided        []string `json:"avoided"`         // R2

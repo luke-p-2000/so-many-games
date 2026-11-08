@@ -1,9 +1,12 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
-import { errorText, LibraryService, list, type State } from "./api";
-import { useRefresh } from "./data";
-import { statusLabel, type StatusValue } from "./statuses";
+import { errorText, LibraryService, list, Status, type State } from "./api";
+import { Cover } from "./components/bits";
+import { useGames, useRefresh } from "./data";
+import { useShowFinishedCard } from "./finishedCardContext";
+import { StatusIcon, statusLabel, statusStyle, type StatusValue } from "./statuses";
 
-type Toast = { message: string; undo?: () => void; error?: boolean };
+/** A status change toast also names the status, so it can show its icon, colour and the game's cover. */
+type Toast = { message: string; undo?: () => void; error?: boolean; status?: StatusValue; what?: string; appid?: number };
 const Ctx = createContext<(t: Toast) => void>(() => {});
 
 export function ToastProvider({ children }: { children: ReactNode }) {
@@ -19,8 +22,9 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     <Ctx.Provider value={show}>
       {children}
       {toast && (
-        <div className={`toast${toast.error ? " error" : ""}`} role="status" aria-live="polite">
-          <span>{toast.message}</span>
+        <div className={`toast${toast.error ? " error" : ""}${toast.status ? " status" : ""}`} role="status" aria-live="polite"
+          style={toast.status ? statusStyle(toast.status) : undefined}>
+          {toast.status && toast.what ? <StatusToast toast={toast as Required<Pick<Toast, "status" | "what">> & Toast} /> : <span>{toast.message}</span>}
           {toast.undo && (
             <button className="btn small" onClick={() => { toast.undo?.(); setToast(null); }}>Undo</button>
           )}
@@ -28,6 +32,18 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         </div>
       )}
     </Ctx.Provider>
+  );
+}
+
+function StatusToast({ toast }: { toast: Toast & { status: StatusValue; what: string } }) {
+  const games = useGames();
+  const game = toast.appid ? games.data?.find((g) => g.appid === toast.appid) : undefined;
+  return (
+    <>
+      <span className="icon" aria-hidden><StatusIcon status={toast.status} size={18} /></span>
+      {game?.cover && <Cover game={game} className="thumb" />}
+      <span><b>{toast.what}</b> → <span className="to">{statusLabel(toast.status)}</span></span>
+    </>
   );
 }
 
@@ -39,9 +55,10 @@ export function useReportError() {
   return useCallback((err: unknown) => toast({ message: errorText(err), error: true }), [toast]);
 }
 
-/** Applies a status at once with an undo toast (L3). */
+/** Applies a status at once with an undo toast (L3). Finishing one game opens its card (ADR 0016). */
 export function useSetStatus() {
   const toast = useToast();
+  const showCard = useShowFinishedCard();
   const refresh = useRefresh();
   const report = useReportError();
   return useCallback(
@@ -51,12 +68,16 @@ export function useSetStatus() {
         refresh();
         toast({
           message: `${what} → ${statusLabel(status)}`,
+          status,
+          what,
+          appid: appids.length === 1 ? appids[0] : undefined,
           undo: () => LibraryService.Restore(before).then(refresh, report),
         });
+        if (status === Status.Finished && appids.length === 1 && before[0]?.status !== Status.Finished) showCard(appids[0], true);
       } catch (err) {
         report(err);
       }
     },
-    [toast, refresh, report],
+    [toast, refresh, report, showCard],
   );
 }

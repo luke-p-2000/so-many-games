@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
-import { hours, lastPlayedText, list, RecService, type BackUp } from "../api";
-import { Segmented } from "../components/bits";
+import { hours, lastPlayedText, list, RecService, Status, type BackUp } from "../api";
+import { EmptyState, Segmented } from "../components/bits";
 import { GameRow } from "../components/GameCards";
 import { useQuery } from "../data";
 
@@ -18,7 +18,9 @@ export function PickBackUp() {
       <h1>Shelved games</h1>
       <p className="subtle">Every Shelved and Endless game you started and put down, at any hours. Mark one Playing to pick it back up.</p>
       <Segmented label="Order" value={order} onChange={setOrder} options={[{ value: "untouched", label: "Longest untouched" }, { value: "hours", label: "Most hours" }]} />
-      {!backUp.loading && items.length === 0 && <div className="panel empty">No Shelved or Endless games.</div>}
+      {!backUp.loading && items.length === 0 && (
+        <EmptyState status={Status.Shelved} title="No Shelved or Endless games">Games you start and put down will gather here, ready to pick back up.</EmptyState>
+      )}
       <div className="row-list">
         {items.map(({ game, matched }) => (
           <GameRow

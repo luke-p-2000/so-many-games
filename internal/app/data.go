@@ -1,6 +1,7 @@
 package app
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"os"
@@ -87,6 +88,20 @@ func (s *DataService) ConfirmImport() error {
 	}
 	s.C.Emit(EventLibraryChanged, nil)
 	return nil
+}
+
+// SaveImage asks where to save and writes a PNG sent from the frontend as base64, such as
+// a finished-game card (ADR 0016).
+func (s *DataService) SaveImage(name, pngBase64 string) (string, error) {
+	data, err := base64.StdEncoding.DecodeString(pngBase64)
+	if err != nil {
+		return "", errors.New("the image could not be read")
+	}
+	path, err := s.saveDialog(name, "PNG image", "*.png")
+	if err != nil {
+		return "", err
+	}
+	return path, os.WriteFile(path, data, 0o644)
 }
 
 // OpenStorePage opens a game's Steam store page in the default browser.

@@ -1,6 +1,7 @@
 // One import point for the generated Wails bindings plus small shared helpers.
 import type { Recommendations } from "../bindings/somanygames/internal/app/models";
 import type { Ranked } from "../bindings/somanygames/internal/recommend/models";
+import { Status, type Game } from "../bindings/somanygames/internal/library/models";
 export {
   DataService,
   LibraryService,
@@ -12,7 +13,7 @@ export {
   WheelService,
 } from "../bindings/somanygames/internal/app";
 export type { Banner, Connection, Recommendations, SyncState, Wheel as WheelDraw } from "../bindings/somanygames/internal/app/models";
-export type { Game, State } from "../bindings/somanygames/internal/library/models";
+export type { Game, State, TierEntry } from "../bindings/somanygames/internal/library/models";
 export { Status } from "../bindings/somanygames/internal/library/models";
 export type { Failure, Progress } from "../bindings/somanygames/internal/meta/models";
 export type { BackUp, Profile, Ranked, Row } from "../bindings/somanygames/internal/recommend/models";
@@ -75,4 +76,30 @@ export function recSections(r: Recommendations | undefined): RecSectionData[] {
   if (!r) return [];
   const tailored = list(r.tailored).length ? [{ key: "tailored", title: "Tailored for you", note: "Games that share the most of your taste tags", games: list(r.tailored) }] : [];
   return [...tailored, ...list(r.rows).map((row) => ({ key: row.tag, title: `Because you play ${row.tag}`, games: list(row.games) }))];
+}
+
+/** Today as a local YYYY-MM-DD date, the format finished dates are stored in. */
+export function todayISO(now = new Date()): string {
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${now.getFullYear()}-${p(now.getMonth() + 1)}-${p(now.getDate())}`;
+}
+
+/** A finished date as "6 November 2026", or "Date unknown". */
+export function finishedDateText(date: string | null): string {
+  if (!date) return "Date unknown";
+  const [y, m, d] = date.split("-").map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+}
+
+/** Finished games, newest finish first; unknown dates last, by name. */
+export function byFinishedNewest(games: Game[]): Game[] {
+  return games
+    .filter((g) => g.status === Status.Finished && g.classified && !g.hidden)
+    .sort((a, b) => (b.finishedAt ?? "").localeCompare(a.finishedAt ?? "") || a.name.localeCompare(b.name));
+}
+
+/** Each Finished game's number in finish order ("Game #8 finished"); unknown dates count first. */
+export function finishedNumbers(games: Game[]): Map<number, number> {
+  const ordered = byFinishedNewest(games).sort((a, b) => (a.finishedAt ?? "").localeCompare(b.finishedAt ?? "") || a.name.localeCompare(b.name));
+  return new Map(ordered.map((g, i) => [g.appid, i + 1]));
 }

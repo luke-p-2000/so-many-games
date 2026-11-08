@@ -12,7 +12,6 @@ import (
 
 	"somanygames/internal/library"
 	"somanygames/internal/meta"
-	"somanygames/internal/stats"
 	"somanygames/internal/steam"
 	"somanygames/internal/store"
 )
@@ -90,7 +89,7 @@ func (c *Core) Start(ctx context.Context) {
 	}
 }
 
-// Sync runs one library sync and logs the backlog for the burn-down. Errors are reported
+// Sync runs one library sync. Errors are reported
 // through the sync state, never blocking the UI (non-functional: UI never blocks on network).
 func (c *Core) Sync() (library.SyncResult, error) {
 	c.syncMu.Lock()
@@ -103,9 +102,6 @@ func (c *Core) Sync() (library.SyncResult, error) {
 	c.Emit(EventSync, SyncState{Running: true})
 
 	res, err := c.Library.Sync(c.ctx)
-	if err == nil {
-		err = c.logBacklog()
-	}
 	state := SyncState{}
 	if err != nil {
 		state.Error = err.Error()
@@ -123,14 +119,6 @@ func (c *Core) SyncState() SyncState {
 	c.syncMu.Lock()
 	defer c.syncMu.Unlock()
 	return c.syncing
-}
-
-func (c *Core) logBacklog() error {
-	games, s, err := c.gamesAndSettings()
-	if err != nil {
-		return err
-	}
-	return stats.LogBacklog(c.DB, games, s, c.now())
 }
 
 // Settings loads the current settings.

@@ -12,6 +12,7 @@ type Game struct {
 	Status          Status         `json:"status"`
 	Completed       bool           `json:"completed"`
 	Rating          *int           `json:"rating"`
+	FinishedAt      *string        `json:"finishedAt"` // YYYY-MM-DD while Finished; nil when unknown (ADR 0016)
 	Hidden          bool           `json:"hidden"`
 	HiddenReason    string         `json:"hiddenReason"`
 	Classified      bool           `json:"classified"`
@@ -44,7 +45,7 @@ func (g Game) TasteTags() []string {
 // Load reads every game with its latest playtime and store data.
 func Load(db *sql.DB) ([]Game, error) {
 	rows, err := db.Query(`
-		SELECT g.appid, g.name, g.status, g.completed, g.rating, g.hidden, g.hidden_reason,
+		SELECT g.appid, g.name, g.status, g.completed, g.rating, g.finished_at, g.hidden, g.hidden_reason,
 		       g.classified, g.meta_unavailable,
 		       COALESCE(s.minutes_total, 0), s.last_played_at,
 		       m.appid IS NOT NULL, m.review_pct, m.review_count, COALESCE(m.release_date, ''),
@@ -63,13 +64,16 @@ func Load(db *sql.DB) ([]Game, error) {
 	for rows.Next() {
 		var g Game
 		var rating, pct, count sql.NullInt64
-		var last sql.NullString
-		if err := rows.Scan(&g.AppID, &g.Name, &g.Status, &g.Completed, &rating, &g.Hidden, &g.HiddenReason,
+		var last, finished sql.NullString
+		if err := rows.Scan(&g.AppID, &g.Name, &g.Status, &g.Completed, &rating, &finished, &g.Hidden, &g.HiddenReason,
 			&g.Classified, &g.MetaUnavailable, &g.Minutes, &last,
 			&g.HasMeta, &pct, &count, &g.ReleaseDate, &g.Cover); err != nil {
 			return nil, err
 		}
 		g.Rating = intPtr(rating)
+		if finished.Valid {
+			g.FinishedAt = &finished.String
+		}
 		g.ReviewPct = intPtr(pct)
 		g.ReviewCount = intPtr(count)
 		if last.Valid {

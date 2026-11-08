@@ -167,14 +167,19 @@ func changeStatus(tx events.Execer, now time.Time, appid int, from, to Status, s
 
 // State is a game's status fields, returned before a change so the UI can undo it (L3).
 type State struct {
-	AppID     int    `json:"appid"`
-	Status    Status `json:"status"`
-	Completed bool   `json:"completed"`
-	Rating    *int   `json:"rating"`
+	AppID      int     `json:"appid"`
+	Status     Status  `json:"status"`
+	Completed  bool    `json:"completed"`
+	Rating     *int    `json:"rating"`
+	FinishedAt *string `json:"finishedAt"`
 }
 
+// DateFormat is how finished dates are stored: a local calendar date (ADR 0016).
+const DateFormat = "2006-01-02"
+
 // SetStatus changes the status of each game and returns their previous states.
-// Leaving Finished clears the rating and Completed (L4).
+// Moving to Finished dates the finish today; leaving Finished clears the rating,
+// Completed and the finished date (L4, ADR 0016).
 func (s *Service) SetStatus(appids []int, status Status) ([]State, error) {
 	if !status.Valid() {
 		return nil, errors.New("invalid status")
@@ -198,10 +203,12 @@ func (s *Service) SetStatus(appids []int, status Status) ([]State, error) {
 		if err := changeStatus(tx, now, id, st.Status, status, "user"); err != nil {
 			return nil, err
 		}
+		q, args := `UPDATE game SET finished_at = ? WHERE appid = ?`, []any{now.Format(DateFormat), id}
 		if status != Finished {
-			if _, err := tx.Exec(`UPDATE game SET rating = NULL, completed = 0 WHERE appid = ?`, id); err != nil {
-				return nil, err
-			}
+			q, args = `UPDATE game SET rating = NULL, completed = 0, finished_at = NULL WHERE appid = ?`, []any{id}
+		}
+		if _, err := tx.Exec(q, args...); err != nil {
+			return nil, err
 		}
 	}
 	return before, tx.Commit()
@@ -225,7 +232,8 @@ func (s *Service) Restore(states []State) error {
 				return err
 			}
 		}
-		if _, err := tx.Exec(`UPDATE game SET completed = ?, rating = ? WHERE appid = ?`, want.Completed, want.Rating, want.AppID); err != nil {
+		if _, err := tx.Exec(`UPDATE game SET completed = ?, rating = ?, finished_at = ? WHERE appid = ?`,
+			want.Completed, want.Rating, want.FinishedAt, want.AppID); err != nil {
 			return err
 		}
 	}
@@ -267,13 +275,42 @@ func (s *Service) SetCompleted(appid int, completed bool) error {
 	return nil
 }
 
+// SetFinishedAt sets the date a Finished game was finished, for backfilling; "" means
+// unknown. Dates in the future are refused (ADR 0016).
+func (s *Service) SetFinishedAt(appid int, date string) error {
+	var value any
+	if date != "" {
+		d, err := time.Parse(DateFormat, date)
+		if err != nil {
+			return errors.New("the finished date must look like 2026-11-06")
+		}
+		if d.Format(DateFormat) > s.Now().Format(DateFormat) {
+			return errors.New("the finished date can't be in the future")
+		}
+		value = date
+	}
+	res, err := s.DB.Exec(`UPDATE game SET finished_at = ? WHERE appid = ? AND status = ?`, value, appid, Finished)
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return errors.New("only Finished games have a finished date")
+	}
+	return nil
+}
+
 func readState(tx *sql.Tx, appid int) (State, error) {
 	st := State{AppID: appid}
 	var rating sql.NullInt64
-	err := tx.QueryRow(`SELECT status, completed, rating FROM game WHERE appid = ?`, appid).Scan(&st.Status, &st.Completed, &rating)
+	var finished sql.NullString
+	err := tx.QueryRow(`SELECT status, completed, rating, finished_at FROM game WHERE appid = ?`, appid).
+		Scan(&st.Status, &st.Completed, &rating, &finished)
 	if errors.Is(err, sql.ErrNoRows) {
 		return st, errors.New("game not found")
 	}
 	st.Rating = intPtr(rating)
+	if finished.Valid {
+		st.FinishedAt = &finished.String
+	}
 	return st, err
 }

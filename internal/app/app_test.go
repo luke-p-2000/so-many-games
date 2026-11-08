@@ -43,13 +43,13 @@ func countEvents(t *testing.T, c *Core, kind string) int {
 	return n
 }
 
-func TestSyncLogsSnapshotAndBacklog(t *testing.T) {
+func TestSyncLogsSnapshot(t *testing.T) {
 	c := newCore(t, fakeOwned{{AppID: 1, Name: "A"}, {AppID: 2, Name: "B", Minutes: 30}})
 	if _, err := c.Sync(); err != nil {
 		t.Fatal(err)
 	}
-	if countEvents(t, c, events.PlaytimeSnapshot) != 1 || countEvents(t, c, events.BacklogSnapshot) != 1 {
-		t.Fatal("a sync should log one playtime and one backlog snapshot")
+	if countEvents(t, c, events.PlaytimeSnapshot) != 1 {
+		t.Fatal("a sync should log one playtime snapshot")
 	}
 	if c.SyncState().Running {
 		t.Fatal("sync state should be idle afterwards")

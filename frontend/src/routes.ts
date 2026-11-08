@@ -7,6 +7,8 @@ export type Route =
   | "settings"
   | "classify"
   | "pickbackup"
+  | "finished"
+  | "tiers"
   | "hidden"
   | "dead";
 
@@ -17,8 +19,9 @@ export const NAV: { route: Route; label: string }[] = [
   { route: "recommendations", label: "Recommendations" },
   { route: "wheel", label: "Wheel" },
   { route: "stats", label: "Stats" },
+  { route: "tiers", label: "Tier list" },
   { route: "settings", label: "Settings" },
 ];
 
 /** Screens reached from inside another highlight that screen in the sidebar. */
-export const PARENT: Partial<Record<Route, Route>> = { pickbackup: "home", hidden: "settings", dead: "settings" };
+export const PARENT: Partial<Record<Route, Route>> = { pickbackup: "home", finished: "home", hidden: "settings", dead: "settings" };

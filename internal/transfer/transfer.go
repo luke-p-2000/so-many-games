@@ -23,19 +23,22 @@ type File struct {
 	Games      []GameState `json:"games"`
 	Tags       TagSettings `json:"tag_settings"`
 	Events     []Event     `json:"events"`
+	// Tiers is the tier list (T2); absent in files from before it existed, which leave it as is.
+	Tiers []library.TierEntry `json:"tiers"`
 }
 
 // GameState is the owner's data about one game.
 type GameState struct {
-	AppID           int    `json:"appid"`
-	Name            string `json:"name"`
-	Status          string `json:"status"`
-	Completed       bool   `json:"completed"`
-	Rating          *int   `json:"rating,omitempty"`
-	HideOverride    string `json:"hide_override,omitempty"`
-	Classified      bool   `json:"classified"`
-	MetaUnavailable bool   `json:"meta_unavailable,omitempty"`
-	FirstSeenAt     string `json:"first_seen_at"`
+	AppID           int     `json:"appid"`
+	Name            string  `json:"name"`
+	Status          string  `json:"status"`
+	Completed       bool    `json:"completed"`
+	Rating          *int    `json:"rating,omitempty"`
+	FinishedAt      *string `json:"finished_at,omitempty"`
+	HideOverride    string  `json:"hide_override,omitempty"`
+	Classified      bool    `json:"classified"`
+	MetaUnavailable bool    `json:"meta_unavailable,omitempty"`
+	FirstSeenAt     string  `json:"first_seen_at"`
 }
 
 // TagSettings are the tag-related settings carried over (X1).
@@ -60,7 +63,7 @@ func Backup(db *sql.DB, dest string) error { return store.Snapshot(db, dest) }
 // Export reads everything X1 carries.
 func Export(db *sql.DB, now time.Time) (File, error) {
 	f := File{Version: FormatVersion, ExportedAt: now.UTC().Format(store.TimeFormat)}
-	rows, err := db.Query(`SELECT appid, name, status, completed, rating, hide_override, classified, meta_unavailable, first_seen_at
+	rows, err := db.Query(`SELECT appid, name, status, completed, rating, finished_at, hide_override, classified, meta_unavailable, first_seen_at
 		FROM game ORDER BY appid`)
 	if err != nil {
 		return f, err
@@ -68,12 +71,16 @@ func Export(db *sql.DB, now time.Time) (File, error) {
 	for rows.Next() {
 		var g GameState
 		var rating sql.NullInt64
-		if err := rows.Scan(&g.AppID, &g.Name, &g.Status, &g.Completed, &rating, &g.HideOverride, &g.Classified, &g.MetaUnavailable, &g.FirstSeenAt); err != nil {
+		var finished sql.NullString
+		if err := rows.Scan(&g.AppID, &g.Name, &g.Status, &g.Completed, &rating, &finished, &g.HideOverride, &g.Classified, &g.MetaUnavailable, &g.FirstSeenAt); err != nil {
 			rows.Close()
 			return f, err
 		}
 		if rating.Valid {
 			g.Rating = new(int(rating.Int64))
+		}
+		if finished.Valid {
+			g.FinishedAt = &finished.String
 		}
 		f.Games = append(f.Games, g)
 	}
@@ -87,6 +94,9 @@ func Export(db *sql.DB, now time.Time) (File, error) {
 		return f, err
 	}
 	f.Tags = TagSettings{s.Stoplist, s.Pinned, s.Avoided, s.HiddenPatterns}
+	if f.Tiers, err = library.LoadTiers(db); err != nil {
+		return f, err
+	}
 
 	evs, err := db.Query(`SELECT at, kind, appid, payload FROM event ORDER BY id`)
 	if err != nil {
@@ -120,6 +130,11 @@ func Parse(data []byte) (File, error) {
 		return f, fmt.Errorf("unsupported export version %d", f.Version)
 	}
 	for _, g := range f.Games {
+		if g.FinishedAt != nil {
+			if _, err := time.Parse(library.DateFormat, *g.FinishedAt); err != nil {
+				return f, fmt.Errorf("game %d: bad finished date", g.AppID)
+			}
+		}
 		if _, err := library.ParseStatus(g.Status); err != nil {
 			return f, fmt.Errorf("game %d: %w", g.AppID, err)
 		}
@@ -197,12 +212,17 @@ func Apply(db *sql.DB, f File, now time.Time) error {
 		if first == "" {
 			first = now.UTC().Format(store.TimeFormat)
 		}
-		if _, err := tx.Exec(`INSERT INTO game (appid, name, status, completed, rating, hide_override, classified, meta_unavailable, first_seen_at)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+		if _, err := tx.Exec(`INSERT INTO game (appid, name, status, completed, rating, finished_at, hide_override, classified, meta_unavailable, first_seen_at)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 			ON CONFLICT (appid) DO UPDATE SET status = excluded.status, completed = excluded.completed,
-				rating = excluded.rating, hide_override = excluded.hide_override,
+				rating = excluded.rating, finished_at = excluded.finished_at, hide_override = excluded.hide_override,
 				classified = excluded.classified, meta_unavailable = excluded.meta_unavailable`,
-			g.AppID, g.Name, g.Status, g.Completed, g.Rating, g.HideOverride, g.Classified, g.MetaUnavailable, first); err != nil {
+			g.AppID, g.Name, g.Status, g.Completed, g.Rating, g.FinishedAt, g.HideOverride, g.Classified, g.MetaUnavailable, first); err != nil {
+			return err
+		}
+	}
+	if f.Tiers != nil {
+		if err := library.WriteTiers(tx, f.Tiers); err != nil {
 			return err
 		}
 	}

@@ -1,6 +1,7 @@
 package store
 
 import (
+	"database/sql"
 	"os"
 	"path/filepath"
 	"testing"
@@ -117,5 +118,43 @@ func TestLegacyHoursLimitCarriesOver(t *testing.T) {
 	var n int
 	if err := db.QueryRow(`SELECT COUNT(*) FROM setting WHERE key = 'hours_limit'`).Scan(&n); err != nil || n != 0 {
 		t.Fatalf("legacy key left behind: n=%d err=%v", n, err)
+	}
+}
+
+func TestFinishedDateBackfill(t *testing.T) {
+	dir := t.TempDir()
+	// Build a version 1 database by hand, as an older install would have it.
+	db, err := sql.Open("sqlite", "file:"+filepath.ToSlash(filepath.Join(dir, dbFile)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	v1, _ := migrationFS.ReadFile("migrations/001_init.sql")
+	if _, err := db.Exec(string(v1) + `;
+		PRAGMA user_version = 1;
+		INSERT INTO game (appid, name, status, first_seen_at) VALUES
+			(1, 'Finished in app', 'finished', 'x'), (2, 'Classified', 'finished', 'x'), (3, 'Left', 'shelved', 'x');
+		INSERT INTO event (at, kind, appid, payload) VALUES
+			('2025-01-01T10:00:00Z', 'status_changed', 1, '{"to":"finished","source":"user"}'),
+			('2025-06-01T10:00:00Z', 'status_changed', 1, '{"to":"finished","source":"user"}'),
+			('2025-01-01T10:00:00Z', 'status_changed', 2, '{"to":"finished","source":"classify"}'),
+			('2025-01-01T10:00:00Z', 'status_changed', 3, '{"to":"finished","source":"user"}');`); err != nil {
+		t.Fatal(err)
+	}
+	db.Close()
+
+	db, err = Open(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	want := map[int]string{1: "2025-06-01", 2: "", 3: ""}
+	for id, w := range want {
+		var got sql.NullString
+		if err := db.QueryRow(`SELECT finished_at FROM game WHERE appid = ?`, id).Scan(&got); err != nil {
+			t.Fatal(err)
+		}
+		if got.String != w {
+			t.Errorf("game %d finished_at = %q, want %q", id, got.String, w)
+		}
 	}
 }
