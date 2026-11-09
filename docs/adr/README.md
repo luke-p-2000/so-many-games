@@ -21,3 +21,4 @@ One file per decision, numbered in order. Status is Proposed until the owner con
 | [0015](0015-ratings-weight-the-taste-profile.md) | Ratings and Not for me weight the taste profile | Accepted |
 | [0016](0016-stats-redesign-finished-cards-and-tier-list.md) | Stats redesign, finished dates and cards, and the tier list | Accepted |
 | [0017](0017-visual-uplift.md) | Visual uplift across the app | Accepted |
+| [0018](0018-share-cards-and-endless-off-the-wheel.md) | Share cards for Stats and the tier list; Endless off the wheel by default | Accepted |

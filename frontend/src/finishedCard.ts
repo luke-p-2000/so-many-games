@@ -6,11 +6,11 @@ import logoUrl from "./assets/logo.svg";
 const W = 1200;
 const H = 630;
 const SCALE = 2; // 2400 × 1260 pixels
-const GREEN = "#5cc98a";
-const DISPLAY = '"Space Grotesk", "Inter", sans-serif';
-const BODY = '"Inter", system-ui, sans-serif';
+export const GREEN = "#5cc98a";
+export const DISPLAY = '"Space Grotesk", "Inter", sans-serif';
+export const BODY = '"Inter", system-ui, sans-serif';
 
-function loadImage(src: string): Promise<HTMLImageElement | null> {
+export function loadImage(src: string): Promise<HTMLImageElement | null> {
   return new Promise((resolve) => {
     const img = new Image();
     img.onload = () => resolve(img);
@@ -20,14 +20,14 @@ function loadImage(src: string): Promise<HTMLImageElement | null> {
 }
 
 /** Draws img to fill the box, cropping the overflow like CSS object-fit: cover. */
-function drawCover(ctx: CanvasRenderingContext2D, img: HTMLImageElement, x: number, y: number, w: number, h: number) {
+export function drawCover(ctx: CanvasRenderingContext2D, img: HTMLImageElement, x: number, y: number, w: number, h: number) {
   const scale = Math.max(w / img.width, h / img.height);
   const sw = w / scale;
   const sh = h / scale;
   ctx.drawImage(img, (img.width - sw) / 2, (img.height - sh) / 2, sw, sh, x, y, w, h);
 }
 
-function check(ctx: CanvasRenderingContext2D, cx: number, cy: number, size: number, width: number) {
+export function check(ctx: CanvasRenderingContext2D, cx: number, cy: number, size: number, width: number) {
   // The Finished status icon's path (24-unit box), centred on cx, cy.
   const k = size / 24;
   ctx.save();
@@ -59,7 +59,7 @@ function wrap(ctx: CanvasRenderingContext2D, words: string[], width: number): st
 }
 
 /** Shortens text with an ellipsis until it fits width. */
-function clip(ctx: CanvasRenderingContext2D, text: string, width: number): string {
+export function clip(ctx: CanvasRenderingContext2D, text: string, width: number): string {
   if (ctx.measureText(text).width <= width) return text;
   while (text.length > 1 && ctx.measureText(`${text}…`).width > width) text = text.slice(0, -1);
   return `${text.trimEnd()}…`;

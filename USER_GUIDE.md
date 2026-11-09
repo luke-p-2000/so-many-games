@@ -73,6 +73,8 @@ Every game has one status. Change it with the row of icons on a game (hover an i
 
 When you set a game to Finished, a card pops up showing the game, the date, hours played and which number finished game it is. **Copy image** puts it on the clipboard, ready to paste into a chat. **Save PNG…** saves it as a file. Every Finished game has a **Card** button in the Library and in Recently finished, so you can get the card again or after changing the date.
 
+**Share** on Stats (on the games finished counter and on the status breakdown) and on the Tier list gives the same kind of image of your progress, your library by status, or your ranked tiers.
+
 ### Tier list
 
 Drag games from **Unranked** on the right into a tier, between tiers, or back. Tick **Include Endless games** to rank Endless games too. Your tiers are saved as you go.
@@ -91,7 +93,7 @@ Drag games from **Unranked** on the right into a tier, between tiers, or back. T
 
 ### Wheel
 
-- **Filters:** tags (a game must have every tag you pick), genre, review score, type (single-player, co-op or PvP), and status (tick any of Unplayed, To play, Shelved and Endless).
+- **Filters:** tags (a game must have every tag you pick), genre, review score, type (single-player, co-op or PvP), and status (tick any of Unplayed, To play, Shelved and Endless). Endless games are left off the wheel unless you tick Endless.
 - **Size:** choose how many games the wheel holds.
 - **Bias toward my taste:** favours games like the ones you play.
 - **After a spin:** mark the winner Playing or Not for me, or spin again.

@@ -312,7 +312,7 @@ func (s *WheelService) SetSize(size int) error {
 // Draw fills a wheel of the given size from the filtered pool, so the wheel can show its
 // games before it spins.
 func (s *WheelService) Draw(f wheel.Filters, bias bool, size int) (Wheel, error) {
-	pool, weights, err := s.pool(f, bias)
+	pool, weights, err := s.pool(&f, bias)
 	if err != nil {
 		return Wheel{}, err
 	}
@@ -322,7 +322,8 @@ func (s *WheelService) Draw(f wheel.Filters, bias bool, size int) (Wheel, error)
 // Pick spins the drawn wheel: it returns the winning index into appids, or -1 when none of
 // them is still eligible.
 func (s *WheelService) Pick(appids []int, bias bool) (int, error) {
-	pool, weights, err := s.pool(wheel.Filters{}, bias)
+	// Unfiltered, so ticked-in Endless games can still win.
+	pool, weights, err := s.pool(nil, bias)
 	if err != nil {
 		return -1, err
 	}
@@ -342,13 +343,16 @@ func (s *WheelService) Pick(appids []int, bias bool) (int, error) {
 	return wheel.Pick(entries, weights, newRand()), nil
 }
 
-// pool is the filtered eligible pool and, with the taste-bias switch, its weights.
-func (s *WheelService) pool(f wheel.Filters, bias bool) ([]library.Game, wheel.Weights, error) {
+// pool is the eligible pool, filtered unless f is nil, and, with the taste-bias switch, its weights.
+func (s *WheelService) pool(f *wheel.Filters, bias bool) ([]library.Game, wheel.Weights, error) {
 	games, settings, err := s.C.gamesAndSettings()
 	if err != nil {
 		return nil, nil, err
 	}
-	pool := wheel.Filter(recommend.Pool(games, limits(settings)), f)
+	pool := recommend.Pool(games, limits(settings))
+	if f != nil {
+		pool = wheel.Filter(pool, *f)
+	}
 	if !bias {
 		return pool, nil, nil
 	}

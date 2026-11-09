@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Share card mocks</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0c0e12; --panel: #1a1d24; --text: #ecedf0; --muted: #9aa1b0; --faint: #7d8494;
+    --line: rgba(255,255,255,0.08); --green: #5cc98a; --gold: #e8b04b;
+    --st-unplayed: #8b93a5; --st-to_play: #5b9cf5; --st-playing: #e8b04b; --st-shelved: #a685e8;
+    --st-finished: #5cc98a; --st-not_for_me: #e66a5c; --st-endless: #3fc1c0; --st-dead: #9c7b63;
+    --display: "Space Grotesk", "Inter", sans-serif; --body: "Inter", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #2a2d34; color: var(--text); font-family: var(--body); padding: 40px; }
+  .label { font: 600 13px var(--body); letter-spacing: .12em; text-transform: uppercase; color: #c4c8d0; margin: 0 0 12px; }
+  .label + p { color: #a0a6b2; margin: -6px 0 14px; font-size: 14px; max-width: 1200px; }
+  .mock { margin-bottom: 56px; }
+
+  /* ---------- shared card chrome (1200 wide, drawn at 2x on canvas) ---------- */
+  .card {
+    position: relative; width: 1200px; overflow: hidden; background: var(--bg);
+    font-family: var(--body); box-shadow: 0 30px 80px rgba(0,0,0,.45);
+  }
+  .card::after { /* inner frame, as on the finished card */
+    content: ""; position: absolute; inset: 22px; border: 1px solid var(--line); border-radius: 18px; pointer-events: none;
+  }
+  .card .glow { position: absolute; border-radius: 50%; filter: blur(10px); pointer-events: none; }
+  .card .inner { position: relative; padding: 50px 60px 48px; }
+  .card-top { display: flex; align-items: center; justify-content: space-between; }
+  .card-top img { height: 52px; display: block; }
+  .badge {
+    display: inline-flex; align-items: center; gap: 10px; height: 40px; padding: 0 22px 0 18px; border-radius: 20px;
+    font: 700 18px var(--display); letter-spacing: 2px; text-transform: uppercase;
+    color: var(--c); background: color-mix(in srgb, var(--c) 14%, transparent); border: 1px solid color-mix(in srgb, var(--c) 50%, transparent);
+  }
+  .badge svg { width: 20px; height: 20px; }
+  .kicker { font: 600 15px var(--body); letter-spacing: 1.2px; text-transform: uppercase; color: var(--faint); }
+  .cover {
+    border-radius: 8px; aspect-ratio: 460/215; display: grid; place-items: center; overflow: hidden;
+    font: 700 22px var(--display); color: rgba(255,255,255,.8); box-shadow: inset 0 0 0 1px rgba(255,255,255,.1);
+  }
+
+  /* ---------- 1. finished progress ---------- */
+  .progress { height: 630px; }
+  .progress .hero { display: flex; align-items: flex-end; justify-content: space-between; margin-top: 54px; }
+  .progress .count { display: flex; align-items: baseline; gap: 18px; }
+  .progress .count b { font: 700 148px/0.82 var(--display); color: var(--green); letter-spacing: -4px; text-shadow: 0 0 40px rgba(92,201,138,.35); }
+  .progress .count span { font: 700 40px var(--display); color: var(--muted); }
+  .progress .count span small { display: block; font: 600 15px var(--body); letter-spacing: 1.2px; text-transform: uppercase; color: var(--faint); margin-top: 6px; }
+  .progress .pct { text-align: right; }
+  .progress .pct b { display: block; font: 700 64px/1 var(--display); }
+  .progress .pct span { font: 500 18px var(--body); color: var(--muted); }
+  .bar { position: relative; margin-top: 34px; height: 30px; border-radius: 15px; background: #1d2129; box-shadow: inset 0 0 0 1px rgba(255,255,255,.06); }
+  .bar .fill {
+    position: absolute; inset: 0 auto 0 0; border-radius: 15px;
+    background: linear-gradient(90deg, #3e9f68, #5cc98a 70%, #8be3b0);
+    box-shadow: 0 0 28px rgba(92,201,138,.45);
+  }
+  .bar .fill::after { /* soft stripes */
+    content: ""; position: absolute; inset: 0; border-radius: inherit;
+    background: repeating-linear-gradient(115deg, rgba(255,255,255,.09) 0 14px, transparent 14px 28px);
+  }
+  .bar .tick { position: absolute; top: 38px; transform: translateX(-50%); font: 600 13px var(--body); color: var(--faint); }
+  .bar .tick::before { content: ""; position: absolute; left: 50%; top: -12px; width: 1px; height: 6px; background: rgba(255,255,255,.18); }
+  .progress .foot { position: absolute; left: 60px; right: 60px; bottom: 48px; display: grid; grid-template-columns: 1.45fr 1fr 1fr; border-top: 1px solid rgba(255,255,255,.1); padding-top: 22px; }
+  .progress .foot > div + div { border-left: 1px solid rgba(255,255,255,.1); padding-left: 32px; }
+  .progress .foot .v { font: 700 30px var(--display); margin-top: 8px; display: flex; align-items: center; gap: 14px; }
+  .progress .foot .v .cover { width: 96px; font-size: 14px; flex: none; }
+  .progress .foot .v small { display: block; font: 500 15px var(--body); color: var(--muted); }
+  .progress .foot .latest .v { font-size: 24px; line-height: 1.15; }
+
+  /* ---------- 2. status breakdown ---------- */
+  .breakdown { height: 630px; }
+  .breakdown .title { display: flex; align-items: baseline; justify-content: space-between; margin-top: 40px; }
+  .breakdown .title h2 { margin: 0; font: 700 46px var(--display); letter-spacing: -1px; }
+  .breakdown .title span { font: 500 20px var(--body); color: var(--muted); }
+  .breakdown .title span b { font: 700 28px var(--display); color: var(--text); }
+  .stack { display: flex; gap: 4px; height: 34px; margin-top: 22px; }
+  .stack div { border-radius: 6px; background: var(--c); }
+  .stack div:first-child { border-radius: 17px 6px 6px 17px; }
+  .stack div:last-child { border-radius: 6px 17px 17px 6px; }
+  .tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 30px; }
+  .tile {
+    position: relative; display: grid; grid-template-columns: 44px 1fr; grid-template-rows: auto auto; column-gap: 14px; align-items: center;
+    padding: 16px 18px; border-radius: 14px; overflow: hidden;
+    background: linear-gradient(135deg, color-mix(in srgb, var(--c) 13%, #161920), #15181e 70%);
+    border: 1px solid color-mix(in srgb, var(--c) 26%, transparent);
+  }
+  .tile::before { content: ""; position: absolute; left: 0; top: 14px; bottom: 14px; width: 3px; border-radius: 0 3px 3px 0; background: var(--c); }
+  .tile .ic { grid-row: span 2; width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; color: var(--c); background: color-mix(in srgb, var(--c) 16%, transparent); }
+  .tile .ic svg { width: 22px; height: 22px; }
+  .tile .nm { font: 600 15px var(--body); color: var(--muted); }
+  .tile .n { font: 700 32px/1.05 var(--display); }
+  .tile .n small { font: 600 15px var(--body); color: var(--c); margin-left: 8px; }
+  .tile.zero { opacity: .45; }
+  .breakdown .foot { position: absolute; left: 60px; right: 60px; bottom: 48px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,.1); padding-top: 22px; font: 500 18px var(--body); color: var(--muted); }
+  .breakdown .foot b { font: 700 24px var(--display); color: var(--text); }
+
+  /* ---------- 3. tier list ---------- */
+  .tiers .board { margin-top: 34px; display: flex; flex-direction: column; gap: 8px; }
+  .tiers .row { display: grid; grid-template-columns: 88px 1fr; min-height: 104px; border-radius: 12px; overflow: hidden; background: #171a21; border: 1px solid var(--line); }
+  .tiers .tl { display: grid; place-items: center; font: 700 40px var(--display); color: #14161b; }
+  .tiers .cards { display: flex; flex-wrap: wrap; gap: 10px; padding: 10px; }
+  .tiers .tc { width: 158px; display: flex; flex-direction: column; gap: 5px; padding: 6px; border-radius: 8px; background: #20242c; border: 1px solid var(--line); }
+  .tiers .tc .cover { border-radius: 5px; font-size: 16px; }
+  .tiers .tc span { font: 600 12px var(--body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tiers .empty { align-self: center; color: #5b6170; font-size: 14px; padding-left: 6px; }
+  .tiers .foot { margin-top: 26px; display: flex; justify-content: space-between; font: 500 16px var(--body); color: var(--muted); }
+  .tiers .foot b { color: var(--text); font-family: var(--display); }
+
+  /* dialog preview */
+  .dialog { width: 760px; background: #1a1d24; border: 1px solid rgba(255,255,255,.12); border-radius: 14px; padding: 18px 20px; font-family: var(--body); }
+  .dialog h3 { margin: 0 0 14px; font: 700 20px var(--display); display: flex; justify-content: space-between; }
+  .dialog .prev { border-radius: 10px; overflow: hidden; background: #0c0e12; }
+  .dialog .prev .card { transform: scale(calc(718/1200)); transform-origin: 0 0; box-shadow: none; }
+  .dialog .prev-wrap { width: 718px; height: calc(630px * 718 / 1200); overflow: hidden; border-radius: 10px; }
+  .dialog .row { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; }
+  .dialog .seg { display: inline-flex; border: 1px solid rgba(255,255,255,.14); border-radius: 8px; overflow: hidden; font-size: 13px; }
+  .dialog .seg span { padding: 6px 12px; color: var(--muted); }
+  .dialog .seg span.on { background: var(--gold); color: #1a1408; font-weight: 600; }
+  .btn { display: inline-block; padding: 8px 14px; border-radius: 8px; font: 600 14px var(--body); background: #21252e; border: 1px solid rgba(255,255,255,.14); color: var(--text); margin-left: 8px; }
+  .btn.primary { background: var(--gold); border-color: var(--gold); color: #1a1408; }
+  .btn.ghost { background: transparent; border-color: transparent; }
+  .share-btn { display: inline-flex; gap: 6px; align-items: center; padding: 5px 10px; font-size: 13px; }
+</style>
+</head>
+<body>
+
+<!-- ===================== 1 ===================== -->
+<section class="mock">
+  <p class="label">1 · Games finished card (1200 × 630, saved at 2400 × 1260)</p>
+  <p>Big finished count and percentage, a glowing striped progress bar with quarter ticks, and a footer with the latest finish, this year's finishes and how many are left. Same frame, logo and green as the finished-game card.</p>
+  <div class="card progress">
+    <div class="glow" style="width:620px;height:620px;right:-140px;top:-240px;background:radial-gradient(circle,rgba(92,201,138,.18),transparent 65%)"></div>
+    <div class="glow" style="width:520px;height:520px;left:-200px;bottom:-300px;background:radial-gradient(circle,rgba(232,176,75,.08),transparent 65%)"></div>
+    <div class="inner">
+      <div class="card-top">
+        <img src="../../../../frontend/src/assets/logo.svg" alt="So Many Games">
+        <span class="badge" style="--c:var(--green)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Games finished</span>
+      </div>
+      <div class="hero">
+        <div class="count"><b>42</b><span>/ 318<small>games in my library</small></span></div>
+        <div class="pct"><b>13.2%</b><span>of my library finished</span></div>
+      </div>
+      <div class="bar">
+        <div class="fill" style="width:13.2%"></div>
+        <span class="tick" style="left:25%">25%</span>
+        <span class="tick" style="left:50%">50%</span>
+        <span class="tick" style="left:75%">75%</span>
+      </div>
+    </div>
+    <div class="foot">
+      <div class="latest">
+        <div class="kicker">Latest finish</div>
+        <div class="v"><div class="cover" style="background:linear-gradient(135deg,#3a5a8c,#1c2b44)">SH</div><div>Starfall Harbor<small>6 November 2026</small></div></div>
+      </div>
+      <div>
+        <div class="kicker">Finished in 2026</div>
+        <div class="v" style="color:var(--green)">11</div>
+      </div>
+      <div>
+        <div class="kicker">Still to go</div>
+        <div class="v">276</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== 2 ===================== -->
+<section class="mock">
+  <p class="label">2 · Status breakdown card (1200 × 630)</p>
+  <p>The stacked bar with rounded, gapped segments, then all eight statuses as coloured tiles with icon, count and share. Statuses at zero are dimmed. Footer carries the backlog line from the Stats screen.</p>
+  <div class="card breakdown">
+    <div class="glow" style="width:700px;height:700px;right:-260px;top:-300px;background:radial-gradient(circle,rgba(91,156,245,.12),transparent 65%)"></div>
+    <div class="glow" style="width:600px;height:600px;left:-260px;bottom:-320px;background:radial-gradient(circle,rgba(166,133,232,.10),transparent 65%)"></div>
+    <div class="inner">
+      <div class="card-top">
+        <img src="../../../../frontend/src/assets/logo.svg" alt="So Many Games">
+        <span class="badge" style="--c:var(--gold)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M4 7h16M4 12h10M4 17h6"/></svg>My library</span>
+      </div>
+      <div class="title"><h2>Status breakdown</h2><span><b>318</b> games</span></div>
+      <div class="stack">
+        <div style="--c:var(--st-unplayed);flex:112"></div>
+        <div style="--c:var(--st-to_play);flex:38"></div>
+        <div style="--c:var(--st-playing);flex:4"></div>
+        <div style="--c:var(--st-shelved);flex:51"></div>
+        <div style="--c:var(--st-finished);flex:42"></div>
+        <div style="--c:var(--st-not_for_me);flex:47"></div>
+        <div style="--c:var(--st-endless);flex:18"></div>
+        <div style="--c:var(--st-dead);flex:6"></div>
+      </div>
+      <div class="tiles">
+        <div class="tile" style="--c:var(--st-unplayed)"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="8" stroke-dasharray="3 3.3"/></svg></span><span class="nm">Unplayed</span><span class="n">112<small>35%</small></span></div>
+        <div class="tile" style="--c:var(--st-to_play)"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M7 4h10v16l-5-4-5 4z"/></svg></span><span class="nm">To play</span><span class="n">38<small>12%</small></span></div>
+        <div class="tile" style="--c:var(--st-playing)"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M8 5l11 7-11 7z"/></svg></span><span class="nm">Playing</span><span class="n">4<small>1.3%</small></span></div>
+        <div class="tile" style="--c:var(--st-shelved)"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 5v14M15 5v14"/></svg></span><span class="nm">Shelved</span><span class="n">51<small>16%</small></span></div>
+        <div class="tile" style="--c:var(--st-finished)"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><span class="nm">Finished</span><span class="n">42<small>13%</small></span></div>
+        <div class="tile" style="--c:var(--st-not_for_me)"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><path d="M6.5 17.5l11-11"/></svg></span><span class="nm">Not for me</span><span class="n">47<small>15%</small></span></div>
+        <div class="tile" style="--c:var(--st-endless)"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 12c-2-2.7-3.6-4-5.5-4a4 4 0 000 8c1.9 0 3.5-1.3 5.5-4zm0 0c2 2.7 3.6 4 5.5 4a4 4 0 000-8c-1.9 0-3.5 1.3-5.5 4z"/></svg></span><span class="nm">Endless</span><span class="n">18<small>5.7%</small></span></div>
+        <div class="tile" style="--c:var(--st-dead)"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 20V10a6 6 0 0112 0v10"/><path d="M4 20h16M12 9v6M9.5 11.5h5"/></svg></span><span class="nm">Dead</span><span class="n">6<small>1.9%</small></span></div>
+      </div>
+    </div>
+    <div class="foot">
+      <span>Backlog <b>201</b> games</span>
+      <span><b>1,284 h</b> already played in the backlog</span>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== 3 ===================== -->
+<section class="mock">
+  <p class="label">3 · Tier list card (1200 wide, height grows with the list)</p>
+  <p>The board exactly as on the Tier list screen, with the logo and a "Tier list" badge on top and a ranked count below. Unranked games are left out; empty tiers stay so the S–F ladder reads whole.</p>
+  <div class="card tiers">
+    <div class="glow" style="width:700px;height:700px;right:-300px;top:-320px;background:radial-gradient(circle,rgba(229,112,122,.10),transparent 65%)"></div>
+    <div class="inner">
+      <div class="card-top">
+        <img src="../../../../frontend/src/assets/logo.svg" alt="So Many Games">
+        <span class="badge" style="--c:#e5707a"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 6h16M4 12h12M4 18h7"/></svg>Tier list</span>
+      </div>
+      <div class="board" id="board"></div>
+      <div class="foot"><span><b>17</b> finished games ranked</span><span>9 November 2026</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== 4 ===================== -->
+<section class="mock">
+  <p class="label">4 · Where it lives</p>
+  <p>A small <span class="btn share-btn">Share</span> button in the head of the Games finished panel, the Status breakdown panel and the Tier list page opens the same dialog as the finished-game card: preview, Save PNG… and Copy image.</p>
+  <div class="dialog">
+    <h3>Games finished card <span style="color:var(--muted);font-weight:400">✕</span></h3>
+    <div class="prev-wrap" id="dlg"></div>
+    <div class="row">
+      <span></span>
+      <span><span class="btn ghost">Close</span><span class="btn">Save PNG…</span><span class="btn primary">Copy image</span></span>
+    </div>
+  </div>
+</section>
+
+<script>
+  const C = { S: "#e5707a", A: "#ec9a5c", B: "#e8c35a", C: "#8fcf6e", D: "#5fb3d9", F: "#9a8fd8" };
+  const hues = [["#3a5a8c","#1c2b44"],["#7a3b4b","#2b1820"],["#3d6b52","#162a20"],["#6b5a2e","#2a2312"],["#4b3d7a","#1d1830"],["#2e6a6b","#122a2a"],["#7a5a3b","#2b2016"]];
+  const board = {
+    S: ["Starfall Harbor", "Lantern Depths", "Echo Protocol"],
+    A: ["Iron Orchard", "Quiet Tide", "Neon Ledger", "Hollow Crown", "Paper Comets"],
+    B: ["Moss & Marrow", "Sky Foundry", "Gravel Saints", "Velvet Circuit"],
+    C: ["Tin Cartographer", "Ashen Rail"],
+    D: ["Bramble Kart"],
+    F: [],
+  };
+  let k = 0;
+  const initials = (n) => n.split(/\s+/).filter((w) => /[A-Za-z]/.test(w)).slice(0, 2).map((w) => w[0]).join("");
+  document.getElementById("board").innerHTML = Object.entries(board).map(([t, gs]) => `
+    <div class="row"><div class="tl" style="background:${C[t]}">${t}</div><div class="cards">${
+      gs.length ? gs.map((g) => { const [a, b] = hues[k++ % hues.length]; return `<div class="tc"><div class="cover" style="background:linear-gradient(135deg,${a},${b})">${initials(g)}</div><span>${g}</span></div>`; }).join("")
+               : `<span class="empty">—</span>`
+    }</div></div>`).join("");
+  // Dialog preview reuses card 1.
+  const clone = document.querySelector(".progress").cloneNode(true);
+  document.getElementById("dlg").appendChild(clone);
+  clone.style.transform = "scale(" + 718 / 1200 + ")"; clone.style.transformOrigin = "0 0"; clone.style.boxShadow = "none";
+</script>
+</body>
+</html>

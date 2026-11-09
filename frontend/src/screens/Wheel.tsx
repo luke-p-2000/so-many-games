@@ -122,14 +122,14 @@ const NO_FILTERS: Filters = { tags: [], genre: "", minReviewPct: 0, type: "", st
 /** The statuses that can be in the eligible pool (R3). */
 const POOL_STATUSES = [Status.Unplayed, Status.ToPlay, Status.Shelved, Status.Endless];
 
-/** Any of the ticked statuses; none ticked means All. */
+/** Any of the ticked statuses; none ticked means all but Endless, which joins only when ticked. */
 function StatusFilter({ value, onChange }: { value: string[]; onChange: (v: string[]) => void }) {
   const toggle = (s: string) => onChange(value.includes(s) ? value.filter((x) => x !== s) : [...value, s]);
   return (
     <div role="group" aria-label="Status">
       <div className="filter-row">
         <span>Status</span>
-        <button type="button" className="link" disabled={!value.length} onClick={() => onChange([])}>{value.length ? "Clear" : "All"}</button>
+        <button type="button" className="link" disabled={!value.length} onClick={() => onChange([])} title="Endless games join the wheel only when Endless is ticked">{value.length ? "Clear" : "All but Endless"}</button>
       </div>
       <div className="status-filter">
         {POOL_STATUSES.map((s) => (

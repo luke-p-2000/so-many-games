@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState, type DragEvent } from "react";
 import { byFinishedNewest, LibraryService, list, SettingsService, Status, type Game, type TierEntry } from "../api";
 import { Cover } from "../components/bits";
+import { ShareButton } from "../components/ShareCard";
 import { useGames, useQuery, useRefresh } from "../data";
+import { drawTierListCard } from "../shareCards";
 import { useReportError } from "../toast";
 
 const TIERS = ["S", "A", "B", "C", "D", "F"] as const;
@@ -45,6 +47,7 @@ export function TierList() {
     return out;
   }, [entries, byId]);
   const placed = new Set(entries.map((e) => e.appid));
+  const rankedCount = [...rows.values()].reduce((a, gs) => a + gs.length, 0);
   const q = search.trim().toLowerCase();
   const unranked = eligible.filter((g) => !placed.has(g.appid) && (!q || g.name.toLowerCase().includes(q)));
 
@@ -111,7 +114,17 @@ export function TierList() {
 
   return (
     <div className="page tier-page">
-      <h1>Tier list</h1>
+      <div className="page-head">
+        <h1>Tier list</h1>
+        <ShareButton
+          title="Tier list card"
+          fileName="So Many Games tier list.png"
+          tall
+          disabled={rankedCount === 0}
+          draw={() => drawTierListCard(TIERS.map((t) => [t, rows.get(t) ?? []]))}
+          drawKey={TIERS.map((t) => (rows.get(t) ?? []).map((g) => `${g.appid}:${g.cover}`).join(",")).join("|")}
+        />
+      </div>
       <p className="subtle" style={{ marginTop: -8 }}>Drag games from Unranked into a tier, between tiers, or back to Unranked.</p>
 
       <div className="tier-layout">

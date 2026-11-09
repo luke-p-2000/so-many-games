@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { finishedDateText, list, StatsService, Status, type Bar, type Stats as S } from "../api";
 import { BarList, Cover, Segmented } from "../components/bits";
-import { useQuery } from "../data";
+import { ShareButton } from "../components/ShareCard";
+import { useGames, useQuery } from "../data";
+import { drawBreakdownCard, drawFinishedProgressCard } from "../shareCards";
 import { STATUSES, StatusIcon, statusStyle } from "../statuses";
 
 const hoursText = (v: number) => Math.round(v).toLocaleString();
@@ -13,6 +15,7 @@ const pct = (n: number, total: number) => {
 /** T1: the finished counter, status breakdown, hours by genre and tag, and most played. */
 export function Stats() {
   const stats = useQuery<S>(() => StatsService.Stats());
+  const games = useGames();
   const [range, setRange] = useState<"all" | "recent">("all");
   const s = stats.data;
   if (!s) return <div className="page"><h1>Stats</h1>{stats.error && <p className="warn-text">{stats.error}</p>}</div>;
@@ -20,6 +23,8 @@ export function Stats() {
   const counts = new Map(list(s.statusCounts).map((b) => [b.label, b.value]));
   const total = [...counts.values()].reduce((a, b) => a + b, 0);
   const rangeLabel = range === "all" ? "All-time" : "Recent";
+  const year = new Date().getFullYear();
+  const thisYear = (games.data ?? []).filter((g) => g.classified && !g.hidden && g.status === Status.Finished && g.finishedAt?.startsWith(`${year}-`)).length;
   const hourBars = (bars: Bar[] | null) => list(bars).map((b) => ({ key: b.label, label: b.label, value: b.value }));
 
   return (
@@ -30,10 +35,21 @@ export function Stats() {
       </div>
       <p className="subtle" style={{ marginTop: -8 }}>Classified, visible games only.</p>
 
-      <FinishedCounter finished={counts.get(Status.Finished) ?? 0} total={total} latest={s.latestFinished} />
+      <FinishedCounter finished={counts.get(Status.Finished) ?? 0} total={total} latest={s.latestFinished} thisYear={thisYear} year={year} />
 
       <section className="panel stats-card" aria-labelledby="status-h">
-        <div className="stats-card-head"><h3 id="status-h">Status breakdown</h3><span className="faint">{total.toLocaleString()} games</span></div>
+        <div className="stats-card-head">
+          <h3 id="status-h">Status breakdown</h3>
+          <div className="head-end">
+            <span className="faint">{total.toLocaleString()} games</span>
+            <ShareButton
+              title="Status breakdown card"
+              fileName="So Many Games status breakdown.png"
+              draw={() => drawBreakdownCard({ counts, backlogSize: s.backlogSize, backlogHours: s.backlogHours })}
+              drawKey={`${JSON.stringify([...counts])}|${s.backlogSize}|${s.backlogHours}`}
+            />
+          </div>
+        </div>
         <div className="status-stack" role="img" aria-label={STATUSES.map((st) => `${st.label} ${counts.get(st.value) ?? 0}`).join(", ")}>
           {STATUSES.filter((st) => counts.get(st.value)).map((st) => (
             <div key={st.value} style={{ ...statusStyle(st.value), flexGrow: counts.get(st.value) }} title={`${st.label}: ${counts.get(st.value)}`} />
@@ -74,7 +90,7 @@ export function Stats() {
   );
 }
 
-function FinishedCounter({ finished, total, latest }: { finished: number; total: number; latest: S["latestFinished"] }) {
+function FinishedCounter({ finished, total, latest, thisYear, year }: { finished: number; total: number; latest: S["latestFinished"]; thisYear: number; year: number }) {
   return (
     <section className="panel finished-counter" aria-label="Games finished">
       <div className="top">
@@ -85,6 +101,12 @@ function FinishedCounter({ finished, total, latest }: { finished: number; total:
         </div>
         <div className="vr" />
         <div className="pct"><div className="big">{pct(finished, total)}</div><div className="lbl">of your library</div></div>
+        <ShareButton
+          title="Games finished card"
+          fileName="So Many Games finished.png"
+          draw={() => drawFinishedProgressCard({ finished, total, latest, thisYear, year })}
+          drawKey={`${finished}|${total}|${latest?.appid}|${latest?.finishedAt}|${thisYear}`}
+        />
       </div>
       <div className="meter" role="progressbar" aria-valuemin={0} aria-valuemax={total} aria-valuenow={finished} aria-label="Finished out of all games">
         <div style={{ width: `${total ? (finished / total) * 100 : 0}%` }} />

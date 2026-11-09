@@ -37,6 +37,9 @@ func TestFilterDefaultsToAll(t *testing.T) {
 	if got := Filter(pool, Filters{Status: []string{"shelved", "endless"}}); len(got) != 2 || got[0].AppID != 1 || got[1].AppID != 3 {
 		t.Fatalf("status filter = %v", got)
 	}
+	if got := Filter(pool, Filters{}); len(got) != 2 || got[0].AppID != 1 || got[1].AppID != 2 {
+		t.Fatalf("Endless must stay off the wheel unless ticked: %v", got)
+	}
 	if got := Filter(pool, Filters{Type: "single-player", Tags: []string{"Shooter"}}); len(got) != 0 {
 		t.Fatalf("filters must AND: %v", got)
 	}

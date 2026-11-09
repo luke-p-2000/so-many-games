@@ -18,10 +18,11 @@ type Filters struct {
 	Genre        string   `json:"genre"`
 	MinReviewPct int      `json:"minReviewPct"`
 	Type         string   `json:"type"` // one of Types: games with that Steam player category
-	Status       []string `json:"status"` // games with any of these statuses
+	Status       []string `json:"status"` // games with any of these statuses; none means all but Endless
 }
 
-// Filter returns the pool games that pass every filter.
+// Filter returns the pool games that pass every filter. Endless games only join the wheel
+// when the Endless status is ticked, since they rarely end.
 func Filter(pool []library.Game, f Filters) []library.Game {
 	var out []library.Game
 	for _, g := range pool {
@@ -38,6 +39,9 @@ func Filter(pool []library.Game, f Filters) []library.Game {
 			continue
 		}
 		if len(f.Status) > 0 && !slices.Contains(f.Status, string(g.Status)) {
+			continue
+		}
+		if len(f.Status) == 0 && g.Status == library.Endless {
 			continue
 		}
 		out = append(out, g)
