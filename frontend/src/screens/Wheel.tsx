@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { hours, list, type Filters, Status, WheelService, type Game, type WheelDraw } from "../api";
 import { Cover } from "../components/bits";
+import { ShareButton } from "../components/ShareCard";
 import { reviewsShort, scoreTone } from "../components/GameCards";
 import { useGames, useQuery, useRefresh } from "../data";
+import { drawWheelPickCard, wheelPickFileName } from "../shareCards";
 import { StatusIcon, statusLabel, statusStyle } from "../statuses";
 import { useReportError, useSetStatus } from "../toast";
 
@@ -261,13 +263,16 @@ function WheelSvg({ entries, winner, spins, landed, onSpin, spinning }: {
   );
 }
 
-/** The picked game: cover over a blurred copy, score, hours, status and tags, with the next moves. */
+/** The picked game: cover over a blurred copy, score, hours, status and tags, with the next moves and a card to share. */
 function Winner({ game, onPlay, onAgain, onNotForMe }: { game: Game; onPlay: () => void; onAgain: () => void; onNotForMe: () => void }) {
   return (
     <section className="winner" aria-live="polite">
       {game.cover && <div className="backdrop" style={{ backgroundImage: `url(/covers/${game.cover})` }} aria-hidden />}
       <div className="body">
-        <div className="kicker">The wheel picked</div>
+        <div className="head">
+          <div className="kicker">The wheel picked</div>
+          <ShareButton title="Up next card" fileName={wheelPickFileName(game)} draw={() => drawWheelPickCard(game)} drawKey={String(game.appid)} />
+        </div>
         <Cover game={game} />
         <h2 className="name">{game.name}</h2>
         <div className="meta">

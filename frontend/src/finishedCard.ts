@@ -66,7 +66,7 @@ export function clip(ctx: CanvasRenderingContext2D, text: string, width: number)
 }
 
 /** Splits the title into at most two lines that fit width, shrinking the font if needed. */
-function fitTitle(ctx: CanvasRenderingContext2D, title: string, width: number): { size: number; lines: string[] } {
+export function fitTitle(ctx: CanvasRenderingContext2D, title: string, width: number): { size: number; lines: string[] } {
   const words = title.split(/\s+/).filter(Boolean);
   for (let size = 58; size >= 34; size -= 4) {
     ctx.font = `700 ${size}px ${DISPLAY}`;

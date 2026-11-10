@@ -346,6 +346,7 @@ input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px;
 .winner .backdrop { position: absolute; inset: -40px; background-size: cover; background-position: center; filter: blur(32px) saturate(1.2); opacity: 0.35; }
 .winner::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(500px 220px at 80% 0%, rgba(232, 176, 75, 0.18), transparent 70%), linear-gradient(180deg, rgba(26, 29, 36, 0.3), rgba(26, 29, 36, 0.95) 60%); }
 .winner .body { position: relative; z-index: 1; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+.winner .head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: -4px 0; }
 .winner .kicker { color: var(--accent); font-family: var(--font-display); font-weight: 700; font-size: 14px; letter-spacing: 0.12em; text-transform: uppercase; }
 .winner .cover { width: 100%; aspect-ratio: 460 / 215; border-radius: 10px; box-shadow: 0 14px 30px rgba(0, 0, 0, 0.5); }
 .winner .name { font-size: 28px; font-weight: 700; line-height: 1.1; }

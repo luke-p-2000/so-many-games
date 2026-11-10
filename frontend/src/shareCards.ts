@@ -1,9 +1,10 @@
-// Draws the shareable Stats and Tier list cards (docs/spec/ui-mocks/share-cards): games
-// finished, the status breakdown and the tier list. They share the finished card's frame,
-// logo and fonts, and are drawn at twice their size like it.
-import { finishedDateText, Status, todayISO, type Game } from "./api";
+// Draws the shareable Stats, Tier list and wheel pick cards (docs/spec/ui-mocks/share-cards):
+// games finished, the status breakdown, the tier list and the game the wheel picked. They share
+// the finished card's frame, logo and fonts, and are drawn at twice their size like it.
+import { finishedDateText, list, Status, todayISO, type Game } from "./api";
 import logoUrl from "./assets/logo.svg";
-import { BODY, check, clip, DISPLAY, drawCover, GREEN, loadImage } from "./finishedCard";
+import { BODY, check, clip, DISPLAY, drawCover, fitTitle, GREEN, loadImage } from "./finishedCard";
+import { reviewsShort } from "./components/GameCards";
 import { STATUSES, type StatusValue } from "./statuses";
 
 const W = 1200;
@@ -514,4 +515,157 @@ export async function drawTierListCard(rows: TierRows): Promise<HTMLCanvasElemen
   ctx.fillText(finishedDateText(todayISO()), W - 60, fy);
   ctx.textAlign = "left";
   return canvas;
+}
+
+// ---- 4. The wheel's pick ----
+
+/** The Wheel nav icon (components/NavIcon.tsx), 24-unit box. */
+const WHEEL_ICON = ["M12 3.5a8.5 8.5 0 100 17 8.5 8.5 0 000-17z", "M12 3.5v17M3.5 12h17M6 6l12 12M18 6L6 18"];
+
+/** The review score colours (styles.css .tone-*). */
+const toneHex = (p: number) => (p >= 90 ? GREEN : p >= 80 ? "#8fcf6e" : GOLD);
+
+/**
+ * The game the wheel landed on, announced as up next: cover, a glowing "The wheel picked",
+ * the name, review score and up to three tags, in the wheel's amber (1200 × 630).
+ */
+export async function drawWheelPickCard(game: Game): Promise<HTMLCanvasElement> {
+  await fonts();
+  await document.fonts.load(`700 58px ${DISPLAY}`);
+  const cover = await coverOf(game);
+  const H = 630;
+  const { canvas, ctx } = frame(H, []);
+
+  // The cover blurred behind a dark wash, an amber glow and an amber frame, like the wheel's result panel.
+  if (cover) {
+    ctx.save();
+    ctx.filter = "blur(38px) saturate(1.2)";
+    ctx.globalAlpha = 0.35;
+    drawCover(ctx, cover, -60, -60, W + 120, H + 120);
+    ctx.restore();
+  }
+  const glow = ctx.createRadialGradient(920, 300, 0, 920, 300, 560);
+  glow.addColorStop(0, rgba(GOLD, 0.2));
+  glow.addColorStop(1, rgba(GOLD, 0));
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, W, H);
+  const wash = ctx.createLinearGradient(0, 0, 0, H);
+  wash.addColorStop(0, "rgba(12,14,18,0.5)");
+  wash.addColorStop(1, "rgba(12,14,18,0.9)");
+  ctx.fillStyle = wash;
+  ctx.fillRect(0, 0, W, H);
+  ctx.strokeStyle = rgba(GOLD, 0.3);
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.roundRect(22.5, 22.5, W - 45, H - 45, 18);
+  ctx.stroke();
+
+  await header(ctx, "UP NEXT", GOLD, (cx, cy) => {
+    ctx.fillStyle = GOLD;
+    ctx.beginPath();
+    ctx.moveTo(cx - 5, cy - 7);
+    ctx.lineTo(cx + 7, cy);
+    ctx.lineTo(cx - 5, cy + 7);
+    ctx.closePath();
+    ctx.fill();
+  });
+
+  // Cover art.
+  const cx = 60, cy = 176, cw = 600, ch = 281;
+  ctx.save();
+  ctx.shadowColor = "rgba(0,0,0,0.6)";
+  ctx.shadowBlur = 50;
+  ctx.shadowOffsetY = 20;
+  ctx.fillStyle = "#1a1d24";
+  ctx.beginPath();
+  ctx.roundRect(cx, cy, cw, ch, 14);
+  ctx.fill();
+  ctx.restore();
+  coverBox(ctx, cover, game.name, cx, cy, cw, ch, 14);
+
+  // The text block beside the cover, centred on it.
+  const tx = 708, tw = W - 60 - tx;
+  const { size, lines } = fitTitle(ctx, game.name, tw);
+  const lineH = size * 1.05;
+  const tags = list(game.tags).slice(0, 3);
+  const rated = game.reviewPct !== null && game.reviewCount !== null;
+  const blockH = 64 + 24 + lines.length * lineH + (rated ? 20 + 30 : 0) + (tags.length ? 22 + 38 : 0);
+  let y = Math.max(130, cy + ch / 2 - blockH / 2);
+
+  // "The wheel picked" with the wheel in a glowing ring.
+  ctx.save();
+  ctx.shadowColor = rgba(GOLD, 0.55);
+  ctx.shadowBlur = 26;
+  ctx.strokeStyle = GOLD;
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.arc(tx + 32, y + 32, 30.5, 0, Math.PI * 2);
+  ctx.stroke();
+  const k = 34 / 24;
+  ctx.translate(tx + 32 - 12 * k, y + 32 - 12 * k);
+  ctx.scale(k, k);
+  ctx.lineWidth = 1.8;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  for (const d of WHEEL_ICON) ctx.stroke(new Path2D(d));
+  ctx.restore();
+  ctx.save();
+  ctx.shadowColor = rgba(GOLD, 0.6);
+  ctx.shadowBlur = 18;
+  ctx.fillStyle = "#ffe7b8";
+  ctx.font = `700 34px ${DISPLAY}`;
+  ctx.textBaseline = "middle";
+  ctx.fillText("The wheel picked", tx + 80, y + 33);
+  ctx.restore();
+  y += 64 + 24;
+
+  ctx.fillStyle = TEXT;
+  ctx.font = `700 ${size}px ${DISPLAY}`;
+  ctx.textBaseline = "top";
+  for (const l of lines) {
+    ctx.fillText(l, tx, y);
+    y += lineH;
+  }
+
+  if (rated) {
+    y += 20;
+    ctx.textBaseline = "middle";
+    ctx.font = `700 26px ${DISPLAY}`;
+    ctx.fillStyle = toneHex(game.reviewPct!);
+    const pct = `${game.reviewPct}%`;
+    ctx.fillText(pct, tx, y + 15);
+    const px = tx + ctx.measureText(pct).width;
+    ctx.font = `500 22px ${BODY}`;
+    ctx.fillStyle = MUTED;
+    ctx.fillText(` · ${reviewsShort(game.reviewCount!)} reviews`, px, y + 15);
+    y += 30;
+  }
+
+  // Tag chips on one row; any that don't fit are left off.
+  if (tags.length) {
+    y += 22;
+    ctx.font = `600 18px ${BODY}`;
+    ctx.textBaseline = "middle";
+    let x = tx;
+    for (const [i, t] of tags.entries()) {
+      const room = tx + tw - x;
+      const full = ctx.measureText(t).width + 32;
+      if (full > room && i > 0) break;
+      const label = full > room ? clip(ctx, t, room - 32) : t;
+      const w = ctx.measureText(label).width + 32;
+      ctx.fillStyle = rgba(GOLD, 0.14);
+      ctx.beginPath();
+      ctx.roundRect(x, y, w, 38, 19);
+      ctx.fill();
+      ctx.fillStyle = GOLD;
+      ctx.fillText(label, x + 16, y + 20);
+      x += w + 10;
+    }
+  }
+  return canvas;
+}
+
+/** A file name such as "Portal 2 up next.png", without characters Windows refuses. */
+export function wheelPickFileName(game: Game): string {
+  return `${game.name.replace(/[<>:"/\|?*]+/g, "").trim() || "Game"} up next.png`;
 }

@@ -96,7 +96,7 @@ Drag games from **Unranked** on the right into a tier, between tiers, or back. T
 - **Filters:** tags (a game must have every tag you pick), genre, review score, type (single-player, co-op or PvP), and status (tick any of Unplayed, To play, Shelved and Endless). Endless games are left off the wheel unless you tick Endless.
 - **Size:** choose how many games the wheel holds.
 - **Bias toward my taste:** favours games like the ones you play.
-- **After a spin:** mark the winner Playing or Not for me, or spin again.
+- **After a spin:** mark the winner Playing or Not for me, or spin again. **Share** gives an "Up next" card for the game the wheel picked (cover, review score and tags) to copy or save, to announce your next game alongside the finished card for the last one.
 
 ## Hidden games
 

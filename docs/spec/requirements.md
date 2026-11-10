@@ -68,7 +68,7 @@ Each requirement is a short story, then an EARS statement (When / While / If ...
 - **R6 Swappable engine.** *Recommendations shall come from one interface (profile and candidates in; ranked games with reasons out) so the tag-based engine can later be replaced or joined by others.*
 - **W1 Wheel pool and filters.** As the owner, I want a random pick from what I'd actually play. *The wheel shall draw from the R3 pool, narrowed by tags (several allowed; a game must have all of them), genre, review score, a Type of single-player, co-op or PvP from Steam's player categories, and status (any of Unplayed, To play, Shelved and Endless ticked). Every filter shall have an All option, which is the default, so an unfiltered wheel draws from the whole pool, except Endless games, which join the wheel only when Endless is ticked (ADR 0018).*
 - **W2 Wheel size and bias.** *The wheel size shall be a slider on the wheel's filter panel: 12, 15, 18, 24 or All, remembered between runs. The wheel shall be drawn as soon as the filters or size change, and Spin shall pick one of the games shown (ADR 0014). The draw shall be plain random, with an optional bias-toward-my-taste switch. For All, the app shall show a spinning name reel instead of wedges.*
-- **W3 Result actions.** *After a spin the app shall offer Mark Playing, Spin again and Not for me.*
+- **W3 Result actions.** *After a spin the app shall offer Mark Playing, Spin again and Not for me, and a Share button for an "Up next" card of the pick to copy or save (ADR 0019).*
 
 ## Functional requirements: stats, nudges, settings and data
 
