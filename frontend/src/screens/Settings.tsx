@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
-  DataService, errorText, Status, EVENTS, LibraryService, MetaService, SettingsService, SetupService,
-  list, type Settings as SettingsModel, type Summary, type SyncState,
+  DataService, errorText, Status, EVENTS, LibraryService, MetaService, SettingsService, SetupService, UpdateService,
+  list, type Settings as SettingsModel, type Summary, type SyncState, type UpdateProgress, type UpdateStatus,
 } from "../api";
 import { useEvent, useGames, useQuery, useRefresh } from "../data";
 import type { Route } from "../routes";
@@ -85,10 +85,14 @@ export function Settings({ go }: { go: (r: Route) => void }) {
         <ImportRow onDone={refresh} />
       </Section>
 
+      <Section title="Updates" note="Checks GitHub for a newer version only when you ask.">
+        <UpdateRow />
+      </Section>
+
       <Section title="About">
         <p className="subtle" style={{ margin: "14px 0" }}>
           So Many Games stores your owned games, playtime, store details, cover art and statuses in %APPDATA%\SoManyGames on this PC.
-          It talks only to Steam. Not affiliated with Valve; Steam data is provided as is. Your steam API key never leaves your PC credential vault.
+          It talks to Steam, and to GitHub only when you check for updates. Not affiliated with Valve; Steam data is provided as is. Your steam API key never leaves your PC credential vault.
         </p>
       </Section>
     </div>
@@ -226,6 +230,66 @@ function ImportRow({ onDone }: { onDone: () => void }) {
             <button className="btn primary" onClick={() => DataService.ConfirmImport().then(() => { setSummary(null); toast({ message: "Import complete" }); onDone(); }, report)}>Replace my data</button>
             <button className="btn" onClick={() => setSummary(null)}>Cancel</button>
           </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+/** U1: check GitHub for a newer release, then download, verify and install it (ADR 0021). */
+function UpdateRow() {
+  const version = useQuery(() => SetupService.Version()).data;
+  const [status, setStatus] = useState<UpdateStatus | null>(null);
+  const [phase, setPhase] = useState<"idle" | "checking" | "downloading" | "installing">("idle");
+  const [progress, setProgress] = useState<UpdateProgress | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  useEvent<UpdateProgress>(EVENTS.updateProgress, setProgress);
+
+  const dev = version === "dev";
+  const busy = phase !== "idle";
+  const check = () => {
+    setPhase("checking"); setError(null);
+    UpdateService.Check().then(setStatus, (e) => setError(errorText(e))).finally(() => setPhase("idle"));
+  };
+  const install = () => {
+    setPhase("downloading"); setError(null); setProgress(null);
+    // On success the app quits and the installer reopens it, so "installing" is the last state.
+    UpdateService.Install().then(() => setPhase("installing"), (e) => { setError(errorText(e)); setPhase("idle"); });
+  };
+  const pct = progress && progress.total > 0 ? Math.round((progress.done / progress.total) * 100) : 0;
+
+  const value = dev ? "Development build: updates are off."
+    : phase === "checking" ? "Checking…"
+    : error ? <span className="warn-text">{error}</span>
+    : status && !status.available ? `You're on the latest version (v${status.current}).`
+    : status?.available ? `Version ${status.latest} is available.`
+    : version ? `You have v${version}.` : "";
+
+  return (
+    <>
+      <Row label="Version" value={value}>
+        <button className="btn" disabled={dev || busy || !version} onClick={check}>Check for updates</button>
+      </Row>
+      {status?.available && (
+        <div className="panel" aria-label="Update available" style={{ margin: "12px 0" }}>
+          <h3>So Many Games {status.latest}</h3>
+          {status.notes && <p className="subtle" style={{ whiteSpace: "pre-wrap", maxHeight: 220, overflowY: "auto" }}>{status.notes}</p>}
+          {phase === "downloading" && (
+            <div style={{ margin: "12px 0" }}>
+              <div className="progress" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}><div style={{ width: `${pct}%` }} /></div>
+              <p className="subtle">Downloading… {pct}%</p>
+            </div>
+          )}
+          {phase === "installing" && <p className="subtle">Installing. So Many Games will close and reopen on the new version.</p>}
+          <div className="toolbar">
+            {status.installed
+              ? <button className="btn primary" disabled={busy} onClick={install}>Install and restart{status.size ? ` (${(status.size / 1048576).toFixed(1)} MB)` : ""}</button>
+              : <>
+                  <button className="btn primary" onClick={() => UpdateService.OpenReleasePage().catch((e) => setError(errorText(e)))}>Open release page</button>
+                  <span className="subtle">This is the portable copy, so download the new version yourself.</span>
+                </>}
+          </div>
+          <p className="subtle">Your library, statuses and settings are kept. The download is checked against a signed checksum before it runs.</p>
         </div>
       )}
     </>

@@ -51,7 +51,13 @@ This writes `bin/somanygames-amd64-installer.exe`, a per-user installer with no 
 
 Built files are not committed; they go on a GitHub Release. Pushing a `v*` tag runs [.github/workflows/release.yml](.github/workflows/release.yml), which tests, builds the installer on a Windows runner and publishes a release with `somanygames-amd64-installer.exe` and the portable `somanygames.exe`.
 
-1. Set the new version in `build/config.yml` (`info.version`), `build/windows/info.json` (all four version fields) and `build/windows/nsis/wails_tools.nsh` (`INFO_PRODUCTVERSION`), then commit. Production builds read the version from `info.json` and show it in the bottom-right corner of the window and in the Steam user agent.
+1. Set the new version, then commit:
+
+```bash
+wails3 task release:bump VERSION=1.5.0
+```
+
+   This writes `build/config.yml` (`info.version`), `build/windows/info.json` (all four version fields) and `build/windows/nsis/wails_tools.nsh` (`INFO_PRODUCTVERSION`). Production builds read the version from `info.json` and show it in the bottom-right corner of the window, in Settings → Updates and in the user agent.
 2. Tag and push:
 
 ```bash
@@ -59,6 +65,8 @@ git tag v1.0.1
 git push origin v1.0.1
 ```
 
-The workflow stops if the tag doesn't match all three versions. The builds are unsigned, so Windows SmartScreen warns on first run (More info → Run anyway).
+The workflow stops if the tag doesn't match all three versions. It also publishes `SHA256SUMS` and `SHA256SUMS.sig`, which in-app updates check before installing anything (ADR 0021).
+
+**Signing key.** The workflow signs with the `SOMANYGAMES_SIGNING_KEY` repository secret, and the matching public key is in `internal/update/github.go`. Keep a copy of the private key somewhere safe outside the repo. To replace it, run `go run ./cmd/release keygen -out <file>`, put the file's contents in the secret and the printed public key in `github.go`. Installs older than that release then need one manual update. The builds are unsigned, so Windows SmartScreen warns on first run (More info → Run anyway).
 
 Adding a migration: put a new `NNN_name.sql` file in `internal/store/migrations`. It runs at the next start, after the database has been copied to `backups/` (the newest 3 copies are kept).

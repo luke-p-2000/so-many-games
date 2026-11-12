@@ -6,6 +6,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"os"
 	"path/filepath"
 	"sync"
 	"time"
@@ -34,6 +35,10 @@ type Core struct {
 	Emit    func(name string, data any)
 	Now     func() time.Time
 	Version string
+	// UpdateDir holds a downloaded installer until the next launch (ADR 0021).
+	UpdateDir string
+	Quit      func()
+	OpenURL   func(url string) error
 
 	ctx     context.Context
 	syncMu  sync.Mutex
@@ -62,7 +67,14 @@ func NewCore(dataDir string) (*Core, error) {
 		Steam:   api,
 		Now:     time.Now,
 		Emit:    func(string, any) {},
+		Quit:    func() {},
+		OpenURL: func(string) error { return errors.New("can't open links here") },
 		ctx:     context.Background(),
+	}
+	if cache, err := os.UserCacheDir(); err == nil {
+		c.UpdateDir = filepath.Join(cache, "SoManyGames", "update")
+	} else {
+		c.UpdateDir = filepath.Join(dataDir, "update")
 	}
 	c.Library = &library.Service{DB: db, Source: api, Now: c.now}
 	c.Fetcher = &meta.Fetcher{
@@ -84,6 +96,8 @@ func (c *Core) CoversDir() string { return filepath.Join(c.DataDir, "covers") }
 // Start records the app context and runs the launch sync (S3) when Steam is connected.
 func (c *Core) Start(ctx context.Context) {
 	c.ctx = ctx
+	// Clear the last update's installer; best effort, as it may still be finishing.
+	go os.RemoveAll(c.UpdateDir)
 	if s, err := store.LoadSettings(c.DB); err == nil && s.SteamID != "" {
 		go c.Sync()
 	}

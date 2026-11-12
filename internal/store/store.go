@@ -4,6 +4,7 @@ package store
 import (
 	"database/sql"
 	"embed"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -24,6 +25,10 @@ const (
 	backupsToKeep   = 3
 	timestampLayout = "20060102-150405"
 )
+
+// ErrNewerDatabase means the database was upgraded by a newer version of the app, so this
+// older one must not touch it (ADR 0021).
+var ErrNewerDatabase = errors.New("your data was saved by a newer version of So Many Games; install the latest version to open it")
 
 // TimeFormat is how every timestamp is stored: UTC RFC 3339, which sorts as text.
 const TimeFormat = time.RFC3339
@@ -87,14 +92,19 @@ func pendingMigrations(db *sql.DB) ([]migration, error) {
 		return nil, err
 	}
 	var out []migration
+	latest := 0
 	for _, e := range entries {
 		v, err := strconv.Atoi(strings.SplitN(e.Name(), "_", 2)[0])
 		if err != nil {
 			return nil, fmt.Errorf("migration %s: name must start with a number", e.Name())
 		}
+		latest = max(latest, v)
 		if v > current {
 			out = append(out, migration{v, e.Name()})
 		}
+	}
+	if current > latest {
+		return nil, ErrNewerDatabase
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].version < out[j].version })
 	return out, nil

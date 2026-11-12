@@ -53,10 +53,16 @@ jobs:
           "${env:ProgramFiles(x86)}\NSIS" | Out-File -FilePath $env:GITHUB_PATH -Append
 
       - name: Test
-        run: go test ./internal/...
+        run: go test ./internal/... ./cmd/...
 
       - name: Build installer
         run: wails3 package
+
+      # In-app updates only install files listed in a signed SHA256SUMS (ADR 0021).
+      - name: Sign checksums
+        env:
+          SOMANYGAMES_SIGNING_KEY: ${{ secrets.SOMANYGAMES_SIGNING_KEY }}
+        run: go run ./cmd/release sign bin/somanygames-amd64-installer.exe bin/somanygames.exe
 
       - name: Publish release
         env:
@@ -65,5 +71,7 @@ jobs:
           gh release create "${{ github.ref_name }}" `
             bin/somanygames-amd64-installer.exe `
             bin/somanygames.exe `
+            bin/SHA256SUMS `
+            bin/SHA256SUMS.sig `
             --title "So Many Games ${{ github.ref_name }}" `
             --generate-notes

@@ -29,7 +29,6 @@ v1 touches only games you own and their Steam store data. Not in v1:
 - AI and local-model recommenders (the design leaves room)
 - Year in review
 - Multiple Steam accounts (each install has exactly one account, set up on first launch), other platforms
-- Updating from inside the app (see Deferred and future features); a newer installer upgrades in place
 
 ## Functional requirements: setup, sync and store data
 
@@ -77,6 +76,7 @@ Each requirement is a short story, then an EARS statement (When / While / If ...
 - **F1 Finished date and card.** As the owner, I want a record of when I finished a game and an image to share. *Finished games shall carry a finished date: today when set to Finished, editable for backfilling, unknown for games finished on the Classify screen until set. Setting one game to Finished shall open a dialog with a shareable card (cover art, finished checkmark, date, hours played, its number in finish order, the app logo) to copy to the clipboard or save as PNG, and the same card shall be available from Finished rows in the Library. Home shall link to Recently finished, listing every Finished game, newest first (ADR 0016, `ui-mocks/FinishedCard.png`).*
 - **N1 Abandoned nudge.** As the owner, I want to notice games I've dropped without deciding. *When a Playing game has not been played for 60 days (adjustable), the app shall show an in-app Abandoned? badge with one-click moves to Shelved, Finished or Not for me. It shall not send Windows notifications. It uses Steam's last-played date (ADR 0009).*
 - **G1 Settings.** *Settings shall hold the API key, sync controls, the recommendation hours limit (10), minimum reviews (50, ADR 0010), recent window (6 months), abandoned days (60), classify window (30 days), tag stoplist, pinned and avoided tags, hidden-name patterns, links to the Hidden and Dead games views, and the backup button.*
+- **U1 Updates.** As the owner, I want to update without hunting for the installer. *When the owner chooses Check for updates in Settings, the app shall ask GitHub for the latest release and, if it is newer, show its version and notes. When the owner chooses Install and restart, the app shall download the installer, verify it against the signed SHA256SUMS, start it silently and close; the installer shall upgrade in place and reopen the app. If verification fails, the app shall delete the download and install nothing. The portable exe shall offer the release page instead. The app shall never check on its own (ADR 0021).*
 - **B1 Backup.** As the owner, I want my data safe. *A Back up button shall download the database. The app shall also copy the database before each schema upgrade, keeping the last 3 copies.*
 - **X1 Export and import.** As the owner, I want to move my data between machines and keep a readable copy. *Export shall write one JSON file holding statuses, ratings, finished dates, hidden flags, tag settings, the tier list and the event log. Import shall read that file, show a summary of what will change, and ask before replacing the current data. The API key is never exported. Store metadata and cover art are not exported; they are re-fetched.*
 - **E1 Event log.** As the owner, I want my history kept for future features. *The app shall record, with timestamps: status changes, ratings, playtime snapshots, and which recommendations were shown, opened or dismissed.*
@@ -87,7 +87,7 @@ This is a personal, single-user tool, so simple and maintainable beats clever. I
 
 **Platform and stack**
 
-- Windows 10/11 x64 only. One window, opening at the layout's designed width and shrunk to fit smaller screens (ADR 0013); closing it quits the app. No tray icon, no background service, no auto-update.
+- Windows 10/11 x64 only. One window, opening at the layout's designed width and shrunk to fit smaller screens (ADR 0013); closing it quits the app. No tray icon, no background service, and no update check unless the owner asks (U1).
 - Wails v3 (exact version pinned) with a React and TypeScript frontend; Go backend; SQLite through the pure-Go `modernc.org/sqlite` driver; `go-keyring` for the Credential Manager; NSIS installer.
 - Dark theme by default.
 
@@ -132,11 +132,6 @@ The design leaves room for all of these; none is built in v1.
 - Estimated hours to beat on Home and Library cards, blank where a lookup fails
 - A time-to-beat range filter on the wheel
 - Candidate source: IGDB with the owner's own credentials. HowLongToBeat has no public API and gates its search against bots, so it is not used.
-
-**Updates**
-
-- A **Check for updates** button in Settings, run by the owner rather than on every launch. It asks GitHub's releases API for the latest version and, if newer, downloads the installer, verifies it against a published SHA-256 checksum, runs it silently and closes. The per-user installer upgrades in place without admin rights and keeps all data.
-- Needs: releases published to GitHub with the installer and checksum; the "no auto-update" non-functional requirement and PRIVACY.md updated, since the app would then contact GitHub as well as Steam; an ADR. The installer is unsigned, so Windows SmartScreen warns on first run unless it is code-signed.
 
 **Other**
 

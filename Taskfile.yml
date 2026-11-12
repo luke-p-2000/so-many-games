@@ -31,6 +31,13 @@ tasks:
     cmds:
       - task: "{{.GOOS}}:run"
 
+  release:bump:
+    summary: "Sets the app version in every build file: wails3 task release:bump VERSION=1.5.0"
+    requires:
+      vars: [VERSION]
+    cmds:
+      - go run ./cmd/release bump {{.VERSION}}
+
   dev:
     summary: Runs the application in development mode
     cmds:

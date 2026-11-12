@@ -19,9 +19,10 @@ The frontend never touches Steam or the database; it calls Go services over Wail
 | `events` | Append-only event log (E1) |
 | `transfer` | Backup download, JSON export and import (B1, X1) |
 | `stats` | The Stats screen figures (T1) |
+| `update` | Checks GitHub for a newer release, then downloads, verifies and starts its installer (U1, ADR 0021) |
 | `app` | Thin Wails services the frontend calls; wiring only, no rules |
 
-Rules: services take their dependencies through constructors; providers and the ranking engine are Go interfaces so they can be swapped or faked in tests; long jobs (sync, fetch) run in goroutines and report progress to the UI with Wails events; no network calls outside `steam` and `meta`. The app has no tray, background service or auto-update, and closing the window quits.
+Rules: services take their dependencies through constructors; providers and the ranking engine are Go interfaces so they can be swapped or faked in tests; long jobs (sync, fetch) run in goroutines and report progress to the UI with Wails events; no network calls outside `steam`, `meta` and `update`, and `update` only when the owner asks. The app has no tray or background service, and closing the window quits.
 
 ## Data model
 

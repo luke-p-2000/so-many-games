@@ -13,6 +13,7 @@ import (
 
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"github.com/wailsapp/wails/v3/pkg/events"
+	"golang.org/x/sys/windows"
 
 	"somanygames/internal/app"
 	"somanygames/internal/steam"
@@ -37,11 +38,11 @@ func (l *lifecycle) ServiceShutdown() error { return l.core.DB.Close() }
 func main() {
 	configDir, err := os.UserConfigDir()
 	if err != nil {
-		log.Fatal(err)
+		fatal(err)
 	}
 	core, err := app.NewCore(filepath.Join(configDir, "SoManyGames"))
 	if err != nil {
-		log.Fatal(err)
+		fatal(err)
 	}
 	core.Version = version
 	steam.UserAgent = "SoManyGames/" + version
@@ -59,6 +60,7 @@ func main() {
 			application.NewService(&app.StatsService{C: core}),
 			application.NewService(&app.SettingsService{C: core}),
 			application.NewService(&app.DataService{C: core}),
+			application.NewService(&app.UpdateService{C: core}),
 		},
 		Assets: application.AssetOptions{
 			Handler:    application.AssetFileServerFS(assets),
@@ -66,6 +68,8 @@ func main() {
 		},
 	})
 	core.Emit = func(name string, data any) { wails.Event.Emit(name, data) }
+	core.Quit = wails.Quit
+	core.OpenURL = wails.Browser.OpenURL
 
 	window := wails.Window.NewWithOptions(application.WebviewWindowOptions{
 		Title:            "So Many Games",
@@ -89,6 +93,14 @@ func main() {
 	if err := wails.Run(); err != nil {
 		log.Fatal(err)
 	}
+}
+
+// fatal shows a startup error in a message box, since production builds have no console.
+func fatal(err error) {
+	text, _ := windows.UTF16PtrFromString(err.Error())
+	title, _ := windows.UTF16PtrFromString("So Many Games")
+	windows.MessageBox(0, text, title, windows.MB_OK|windows.MB_ICONERROR)
+	log.Fatal(err)
 }
 
 // The window opens at the width the layout is designed for: sidebar 240 + page 1400 +

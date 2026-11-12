@@ -10,6 +10,7 @@ export {
   SettingsService,
   SetupService,
   StatsService,
+  UpdateService,
   WheelService,
 } from "../bindings/somanygames/internal/app";
 export type { Banner, Connection, Recommendations, SyncState, Wheel as WheelDraw } from "../bindings/somanygames/internal/app/models";
@@ -20,6 +21,9 @@ export type { BackUp, Profile, Ranked, Row } from "../bindings/somanygames/inter
 export type { Bar, Stats } from "../bindings/somanygames/internal/stats/models";
 export type { Settings } from "../bindings/somanygames/internal/store/models";
 export type { Summary } from "../bindings/somanygames/internal/transfer/models";
+export type { Status as UpdateStatus } from "../bindings/somanygames/internal/update/models";
+/** Payload of EVENTS.updateProgress (update.Progress in Go). */
+export type UpdateProgress = { done: number; total: number };
 export type { Filters } from "../bindings/somanygames/internal/wheel/models";
 
 /** Go nil slices arrive as null; read every list through this. */
@@ -30,6 +34,7 @@ export const EVENTS = {
   libraryChanged: "library:changed",
   sync: "sync:state",
   fetchProgress: "fetch:progress",
+  updateProgress: "update:progress",
 } as const;
 
 /** Error text from a rejected binding call. Wails wraps Go errors in an object with `message`. */

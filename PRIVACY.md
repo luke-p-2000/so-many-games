@@ -17,6 +17,7 @@ Your Steam Web API key is kept only in Windows Credential Manager. It never goes
 
 - Your API key and SteamID go to the Steam Web API to read your owned games, and to turn a profile URL into a SteamID.
 - Game app IDs go to Steam's public store endpoints to fetch store details and cover art.
+- When you choose **Check for updates** in Settings, the app asks GitHub for the latest release, and **Install and restart** downloads it from GitHub. GitHub sees your IP address and the app's version. The app never checks by itself.
 - Nothing else leaves the PC.
 
 ## Removing it

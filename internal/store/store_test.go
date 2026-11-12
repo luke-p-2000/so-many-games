@@ -2,6 +2,7 @@ package store
 
 import (
 	"database/sql"
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -27,6 +28,24 @@ func TestOpenAppliesMigrationsOnce(t *testing.T) {
 	db.Close()
 	if _, err := os.Stat(filepath.Join(dir, backupDir)); !os.IsNotExist(err) {
 		t.Fatalf("unexpected backup dir: %v", err)
+	}
+}
+
+func TestOpenRefusesNewerDatabase(t *testing.T) {
+	dir := t.TempDir()
+	db, err := Open(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Exec(`PRAGMA user_version = 999`); err != nil {
+		t.Fatal(err)
+	}
+	db.Close()
+	if db, err := Open(dir); !errors.Is(err, ErrNewerDatabase) {
+		if db != nil {
+			db.Close()
+		}
+		t.Fatalf("Open = %v, want ErrNewerDatabase", err)
 	}
 }
 

@@ -84,13 +84,41 @@ Function .onInit
    !insertmacro wails.checkArchitecture
 FunctionEnd
 
+# ADR 0021: an in-app update starts this installer with /S /RELAUNCH and then quits, so the
+# app's exe may still be locked for a moment. Wait up to 10 s for it to close; after that,
+# ask (silent installs give up rather than fail halfway).
+Function WaitForAppToClose
+    StrCpy $R1 0
+    retry:
+        IfFileExists "$INSTDIR\${PRODUCT_EXECUTABLE}" 0 done
+        ClearErrors
+        FileOpen $R0 "$INSTDIR\${PRODUCT_EXECUTABLE}" a
+        IfErrors locked
+        FileClose $R0
+        Goto done
+    locked:
+        IntOp $R1 $R1 + 1
+        IntCmp $R1 20 ask
+        Sleep 500
+        Goto retry
+    ask:
+        MessageBox MB_RETRYCANCEL|MB_ICONEXCLAMATION "Close ${INFO_PRODUCTNAME}, then choose Retry." /SD IDCANCEL IDRETRY again
+        Abort
+    again:
+        StrCpy $R1 0
+        Goto retry
+    done:
+FunctionEnd
+
 Section
     !insertmacro wails.setShellContext
+
+    Call WaitForAppToClose
 
     !insertmacro wails.webview2runtime
 
     SetOutPath $INSTDIR
-    
+
     !insertmacro wails.files
 
     CreateShortcut "$SMPROGRAMS\${INFO_PRODUCTNAME}.lnk" "$INSTDIR\${PRODUCT_EXECUTABLE}"
@@ -98,8 +126,15 @@ Section
 
     !insertmacro wails.associateFiles
     !insertmacro wails.associateCustomProtocols
-    
+
     !insertmacro wails.writeUninstaller
+
+    # ADR 0021: reopen the app after an in-app update.
+    ${GetParameters} $R0
+    ClearErrors
+    ${GetOptions} $R0 "/RELAUNCH" $R1
+    IfErrors +2
+        Exec '"$INSTDIR\${PRODUCT_EXECUTABLE}"'
 SectionEnd
 
 Section "uninstall" 

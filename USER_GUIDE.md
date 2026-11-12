@@ -24,7 +24,7 @@ Keep the key private. The app stores it only in Windows Credential Manager, neve
 
 **Windows warning:** the installer isn't code-signed, so Windows may say "Windows protected your PC". Choose **More info → Run anyway**.
 
-**Updating:** run a newer installer. Your data is kept.
+**Updating:** in **Settings → Updates**, choose **Check for updates**, then **Install and restart**. The app downloads the new version, checks its signature, closes and reopens updated. Your data is kept. The app only contacts GitHub when you choose this. If you use the portable `somanygames.exe`, the button opens the release page so you can download it yourself. Versions before 1.5.0 don't have the button, so run a newer installer instead.
 
 ## First run
 
@@ -109,7 +109,7 @@ Demos, soundtracks, test servers, tools and other non-games are hidden automatic
 
 ## Your data
 
-- Everything is stored in `%APPDATA%\SoManyGames` on this PC. The app talks only to Steam.
+- Everything is stored in `%APPDATA%\SoManyGames` on this PC. The app talks to Steam, and to GitHub only when you check for updates.
 - **Back up** (Settings) saves a copy of the database.
 - **Export** saves your statuses, ratings, finished dates, hidden games, tag settings, tier list and history to a JSON file. **Import** loads that file, for example on a new PC. Store data isn't exported; the app downloads it again.
 - Backups and exports never include your API key.
@@ -129,4 +129,7 @@ The uninstaller asks whether to delete your data and saved API key too. Choose *
 | "Steam is rate limiting requests" | Wait a few minutes and try again. The app slows down automatically. |
 | Some games have no store data | Delisted or region-locked games have no store page. Open the failures list on the banner, then choose **Retry** or **Mark unavailable**. |
 | A game you own is missing | Steam doesn't list free-to-play games you've never played, or games borrowed through Family Sharing. |
+| "The update failed its security check" | The download didn't match the signed checksum, so nothing was installed. Try again later, or download the installer from the release page. |
+| "GitHub is limiting update checks" | Wait an hour and check again. |
+| "Your data was saved by a newer version" | You opened an older copy of the app. Install the latest version. |
 | The taskbar shows an old icon | Windows cached the old icon. Restarting Windows usually fixes it. |
