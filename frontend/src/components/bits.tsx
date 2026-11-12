@@ -14,13 +14,16 @@ export function Cover({ game, className = "" }: { game: Pick<Game, "cover" | "na
   );
 }
 
-/** 1-10 rating for Finished games (L4). Clicking the current value clears it. */
-export function Rating({ value, onChange, name }: { value: number | null; onChange: (v: number | null) => void; name: string }) {
+/** Rating letters, best first; the same scale as the tier list (L4, ADR 0020). */
+export const RATINGS = ["S", "A", "B", "C", "D", "F"] as const;
+
+/** S-F rating for Finished games (L4, ADR 0020). Clicking the current value clears it. */
+export function Rating({ value, onChange, name }: { value: string | null; onChange: (v: string | null) => void; name: string }) {
   return (
     <div className="rating" role="group" aria-label={`Rating for ${name}`}>
-      {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
-        <button key={n} type="button" aria-pressed={value === n} aria-label={`Rate ${n}`} onClick={() => onChange(value === n ? null : n)}>
-          {n}
+      {RATINGS.map((r) => (
+        <button key={r} type="button" className={`rate-${r}`} aria-pressed={value === r} aria-label={`Rate ${r}`} onClick={() => onChange(value === r ? null : r)}>
+          {r}
         </button>
       ))}
     </div>

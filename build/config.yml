@@ -11,7 +11,7 @@ info:
   description: "Track your Steam library and pick what to play next" # The application description
   copyright: "(c) 2026, Luke" # Copyright text
   comments: "Not affiliated with Valve" # Comments
-  version: "1.5.0" # The application version
+  version: "1.6.0" # The application version
   # cfBundleIconName: "appicon" # The macOS icon name in Assets.car icon bundles (optional)
   #                               # Should match the name of your .icon file without the extension
   #                               # If not set and Assets.car exists, defaults to "appicon"

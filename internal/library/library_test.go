@@ -195,8 +195,8 @@ func TestSetStatusClearsRatingAndUndoRestoresIt(t *testing.T) {
 	if _, err := svc.SetStatus([]int{1}, Finished); err != nil {
 		t.Fatal(err)
 	}
-	eight := 8
-	if err := svc.SetRating(1, &eight); err != nil {
+	a := "A"
+	if err := svc.SetRating(1, &a); err != nil {
 		t.Fatal(err)
 	}
 	if err := svc.SetCompleted(1, true); err != nil {
@@ -214,17 +214,19 @@ func TestSetStatusClearsRatingAndUndoRestoresIt(t *testing.T) {
 		t.Fatal(err)
 	}
 	g := gameByID(t, svc.DB, 1)
-	if g.Status != Finished || g.Rating == nil || *g.Rating != 8 || !g.Completed {
+	if g.Status != Finished || g.Rating == nil || *g.Rating != "A" || !g.Completed {
 		t.Fatalf("undo did not restore: %+v", g)
 	}
 
-	if err := svc.SetRating(1, ptr(11)); err == nil {
-		t.Error("rating 11 should be rejected")
+	for _, bad := range []string{"E", "s", "8", ""} {
+		if err := svc.SetRating(1, &bad); err == nil {
+			t.Errorf("rating %q should be rejected", bad)
+		}
 	}
 	if _, err := svc.SetStatus([]int{1}, Playing); err != nil {
 		t.Fatal(err)
 	}
-	if err := svc.SetRating(1, &eight); err == nil {
+	if err := svc.SetRating(1, &a); err == nil {
 		t.Error("only Finished games take a rating")
 	}
 }
@@ -250,8 +252,6 @@ func TestHideOverrides(t *testing.T) {
 		t.Errorf("manual hide: %+v", g)
 	}
 }
-
-func ptr(n int) *int { return &n }
 
 func unclassified(t *testing.T, db *sql.DB) int {
 	t.Helper()

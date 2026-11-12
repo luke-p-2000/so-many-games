@@ -93,15 +93,15 @@ func TestBuildProfileDampensStoplistsAndPins(t *testing.T) {
 }
 
 func TestBuildProfileWeighsRatingsAndNotForMe(t *testing.T) {
-	rated := func(id, rating int, tag string) library.Game {
+	rated := func(id int, rating, tag string) library.Game {
 		g := game(id, library.Finished, 100*60, tag)
 		g.Rating = &rating
 		return g
 	}
 	games := []library.Game{
-		rated(1, 10, "Loved"),                          // 10 * 10/5.5 ~ 18.2
+		rated(1, "S", "Loved"),                         // 10 * 1.75 = 17.5
 		game(2, library.Finished, 100*60, "Unrated"),   // 10
-		rated(3, 2, "Disliked"),                        // 10 * 2/5.5 ~ 3.6
+		rated(3, "D", "Disliked"),                      // 10 * 0.3 = 3
 		game(4, library.NotForMe, 1000*60, "Rejected"), // left out
 		game(5, library.Shelved, 25*60, "Played"),      // 5
 	}

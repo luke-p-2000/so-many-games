@@ -99,7 +99,7 @@ func (s *LibraryService) SetStatus(appids []int, status string) ([]library.State
 
 func (s *LibraryService) Restore(states []library.State) error { return s.C.Library.Restore(states) }
 
-func (s *LibraryService) SetRating(appid int, rating *int) error {
+func (s *LibraryService) SetRating(appid int, rating *string) error {
 	return s.C.Library.SetRating(appid, rating)
 }
 

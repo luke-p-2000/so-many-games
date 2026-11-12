@@ -33,16 +33,16 @@ func TestExportImportRoundTrip(t *testing.T) {
 	if _, err := src.SetStatus([]int{1}, library.Finished); err != nil {
 		t.Fatal(err)
 	}
-	nine := 9
-	if err := src.SetRating(1, &nine); err != nil {
+	s := "S"
+	if err := src.SetRating(1, &s); err != nil {
 		t.Fatal(err)
 	}
 	if err := library.SaveTiers(src.DB, []library.TierEntry{{AppID: 1, Tier: "A", Position: 0}}); err != nil {
 		t.Fatal(err)
 	}
-	s, _ := store.LoadSettings(src.DB)
-	s.Pinned = []string{"Roguelike"}
-	if err := store.SaveSettings(src.DB, s); err != nil {
+	set, _ := store.LoadSettings(src.DB)
+	set.Pinned = []string{"Roguelike"}
+	if err := store.SaveSettings(src.DB, set); err != nil {
 		t.Fatal(err)
 	}
 
@@ -71,7 +71,7 @@ func TestExportImportRoundTrip(t *testing.T) {
 		t.Fatal(err)
 	}
 	games, _ := library.Load(dst.DB)
-	if games[0].AppID != 1 || games[0].Status != library.Finished || games[0].Rating == nil || *games[0].Rating != 9 {
+	if games[0].AppID != 1 || games[0].Status != library.Finished || games[0].Rating == nil || *games[0].Rating != "S" {
 		t.Fatalf("imported game = %+v", games[0])
 	}
 	if games[0].FinishedAt == nil || *games[0].FinishedAt != "2026-11-07" {
@@ -96,10 +96,41 @@ func TestParseRejectsBadFiles(t *testing.T) {
 		`{"version": 99}`,
 		`{"version": 1, "games": [{"appid": 1, "status": "paused"}]}`,
 		`{"version": 1, "games": [{"appid": 1, "status": "finished", "rating": 11}]}`,
+		`{"version": 1, "games": [{"appid": 1, "status": "finished", "rating": "S"}]}`,
+		`{"version": 2, "games": [{"appid": 1, "status": "finished", "rating": 9}]}`,
+		`{"version": 2, "games": [{"appid": 1, "status": "finished", "rating": "E"}]}`,
 	} {
 		if _, err := Parse([]byte(bad)); err == nil {
 			t.Errorf("accepted %s", bad)
 		}
+	}
+}
+
+func TestParseUpgradesVersion1Ratings(t *testing.T) {
+	data := `{"version": 1, "games": [
+		{"appid": 1, "status": "finished", "rating": 0},
+		{"appid": 2, "status": "finished", "rating": 2},
+		{"appid": 3, "status": "finished", "rating": 4},
+		{"appid": 4, "status": "finished", "rating": 5},
+		{"appid": 5, "status": "finished", "rating": 8},
+		{"appid": 6, "status": "finished", "rating": 9},
+		{"appid": 7, "status": "finished"}],
+		"events": [{"at": "2026-11-07T00:00:00Z", "kind": "rated", "appid": 6, "payload": {"rating": 10}}]}`
+	f, err := Parse([]byte(data))
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []string{"F", "D", "C", "B", "A", "S"}
+	for i, w := range want {
+		if r := f.Games[i].Rating; r == nil || *r != w {
+			t.Errorf("game %d rating = %v, want %s", i+1, r, w)
+		}
+	}
+	if f.Games[6].Rating != nil {
+		t.Errorf("unrated game got %v", *f.Games[6].Rating)
+	}
+	if string(f.Events[0].Payload) != `{"rating":"S"}` {
+		t.Errorf("event payload = %s", f.Events[0].Payload)
 	}
 }
 

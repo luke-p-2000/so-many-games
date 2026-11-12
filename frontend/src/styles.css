@@ -236,7 +236,14 @@ input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px;
 
 .rating { display: inline-flex; gap: 2px; }
 .rating button { width: 22px; height: 24px; border-radius: 5px; border: 1px solid var(--border); background: var(--bg-sunken); color: var(--text-faint); font-size: 11px; cursor: pointer; padding: 0; }
-.rating button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 700; }
+.rating button[aria-pressed="true"] { color: #14161b; border-color: transparent; font-weight: 700; }
+/* The selected letter takes its tier list colour (ADR 0020). */
+.rating .rate-S[aria-pressed="true"] { background: #e5707a; }
+.rating .rate-A[aria-pressed="true"] { background: #ec9a5c; }
+.rating .rate-B[aria-pressed="true"] { background: #e8c35a; }
+.rating .rate-C[aria-pressed="true"] { background: #8fcf6e; }
+.rating .rate-D[aria-pressed="true"] { background: #5fb3d9; }
+.rating .rate-F[aria-pressed="true"] { background: #9a8fd8; }
 
 /* ---- progress ---- */
 

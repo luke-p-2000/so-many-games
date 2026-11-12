@@ -13,8 +13,9 @@ import (
 	"somanygames/internal/store"
 )
 
-// FormatVersion is bumped when the export layout changes.
-const FormatVersion = 1
+// FormatVersion is bumped when the export layout changes. Version 2 stores ratings as
+// tier letters (ADR 0020); version 1 files, with 0-10 scores, are converted on import.
+const FormatVersion = 2
 
 // File is the export format.
 type File struct {
@@ -33,7 +34,7 @@ type GameState struct {
 	Name            string  `json:"name"`
 	Status          string  `json:"status"`
 	Completed       bool    `json:"completed"`
-	Rating          *int    `json:"rating,omitempty"`
+	Rating          *string `json:"rating,omitempty"`
 	FinishedAt      *string `json:"finished_at,omitempty"`
 	HideOverride    string  `json:"hide_override,omitempty"`
 	Classified      bool    `json:"classified"`
@@ -70,14 +71,13 @@ func Export(db *sql.DB, now time.Time) (File, error) {
 	}
 	for rows.Next() {
 		var g GameState
-		var rating sql.NullInt64
-		var finished sql.NullString
+		var rating, finished sql.NullString
 		if err := rows.Scan(&g.AppID, &g.Name, &g.Status, &g.Completed, &rating, &finished, &g.HideOverride, &g.Classified, &g.MetaUnavailable, &g.FirstSeenAt); err != nil {
 			rows.Close()
 			return f, err
 		}
 		if rating.Valid {
-			g.Rating = new(int(rating.Int64))
+			g.Rating = &rating.String
 		}
 		if finished.Valid {
 			g.FinishedAt = &finished.String
@@ -123,6 +123,18 @@ func Export(db *sql.DB, now time.Time) (File, error) {
 // Parse reads and validates an export file.
 func Parse(data []byte) (File, error) {
 	var f File
+	var head struct {
+		Version int `json:"version"`
+	}
+	if err := json.Unmarshal(data, &head); err != nil {
+		return f, fmt.Errorf("not a So Many Games export: %w", err)
+	}
+	if head.Version == 1 {
+		var err error
+		if data, err = upgradeV1(data); err != nil {
+			return f, fmt.Errorf("not a So Many Games export: %w", err)
+		}
+	}
 	if err := json.Unmarshal(data, &f); err != nil {
 		return f, fmt.Errorf("not a So Many Games export: %w", err)
 	}
@@ -138,8 +150,8 @@ func Parse(data []byte) (File, error) {
 		if _, err := library.ParseStatus(g.Status); err != nil {
 			return f, fmt.Errorf("game %d: %w", g.AppID, err)
 		}
-		if g.Rating != nil && (*g.Rating < 1 || *g.Rating > 10) {
-			return f, fmt.Errorf("game %d: rating out of range", g.AppID)
+		if g.Rating != nil && !library.ValidRating(*g.Rating) {
+			return f, fmt.Errorf("game %d: rating must be S, A, B, C, D or F", g.AppID)
 		}
 	}
 	return f, nil
@@ -248,7 +260,67 @@ func Apply(db *sql.DB, f File, now time.Time) error {
 	return tx.Commit()
 }
 
-func sameRating(a, b *int) bool {
+// upgradeV1 rewrites a version 1 export as version 2: 0-10 ratings on games and in
+// 'rated' events become tier letters (ADR 0020).
+func upgradeV1(data []byte) ([]byte, error) {
+	var doc map[string]json.RawMessage
+	if err := json.Unmarshal(data, &doc); err != nil {
+		return nil, err
+	}
+	letter := func(obj map[string]json.RawMessage) error {
+		raw, ok := obj["rating"]
+		if !ok || string(raw) == "null" {
+			return nil
+		}
+		var n int
+		if err := json.Unmarshal(raw, &n); err != nil {
+			return fmt.Errorf("rating %s is not a 0-10 score", raw)
+		}
+		if n < 0 || n > 10 {
+			return fmt.Errorf("rating %d out of range", n)
+		}
+		obj["rating"], _ = json.Marshal(library.RatingFromScore(n))
+		return nil
+	}
+	if raw, ok := doc["games"]; ok && string(raw) != "null" {
+		var games []map[string]json.RawMessage
+		if err := json.Unmarshal(raw, &games); err != nil {
+			return nil, err
+		}
+		for _, g := range games {
+			if err := letter(g); err != nil {
+				return nil, err
+			}
+		}
+		doc["games"], _ = json.Marshal(games)
+	}
+	if raw, ok := doc["events"]; ok && string(raw) != "null" {
+		var evs []map[string]json.RawMessage
+		if err := json.Unmarshal(raw, &evs); err != nil {
+			return nil, err
+		}
+		for _, e := range evs {
+			var kind string
+			json.Unmarshal(e["kind"], &kind)
+			if kind != "rated" {
+				continue
+			}
+			var payload map[string]json.RawMessage
+			if json.Unmarshal(e["payload"], &payload) != nil {
+				continue
+			}
+			if err := letter(payload); err != nil {
+				return nil, err
+			}
+			e["payload"], _ = json.Marshal(payload)
+		}
+		doc["events"], _ = json.Marshal(evs)
+	}
+	doc["version"], _ = json.Marshal(FormatVersion)
+	return json.Marshal(doc)
+}
+
+func sameRating(a, b *string) bool {
 	if a == nil || b == nil {
 		return a == b
 	}

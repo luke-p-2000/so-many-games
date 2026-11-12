@@ -11,7 +11,7 @@ type Game struct {
 	Name            string         `json:"name"`
 	Status          Status         `json:"status"`
 	Completed       bool           `json:"completed"`
-	Rating          *int           `json:"rating"`
+	Rating          *string        `json:"rating"`
 	FinishedAt      *string        `json:"finishedAt"` // YYYY-MM-DD while Finished; nil when unknown (ADR 0016)
 	Hidden          bool           `json:"hidden"`
 	HiddenReason    string         `json:"hiddenReason"`
@@ -63,14 +63,15 @@ func Load(db *sql.DB) ([]Game, error) {
 	index := map[int]int{}
 	for rows.Next() {
 		var g Game
-		var rating, pct, count sql.NullInt64
+		var pct, count sql.NullInt64
+		var rating sql.NullString
 		var last, finished sql.NullString
 		if err := rows.Scan(&g.AppID, &g.Name, &g.Status, &g.Completed, &rating, &finished, &g.Hidden, &g.HiddenReason,
 			&g.Classified, &g.MetaUnavailable, &g.Minutes, &last,
 			&g.HasMeta, &pct, &count, &g.ReleaseDate, &g.Cover); err != nil {
 			return nil, err
 		}
-		g.Rating = intPtr(rating)
+		g.Rating = strPtr(rating)
 		if finished.Valid {
 			g.FinishedAt = &finished.String
 		}
@@ -125,4 +126,11 @@ func intPtr(n sql.NullInt64) *int {
 	}
 	v := int(n.Int64)
 	return &v
+}
+
+func strPtr(s sql.NullString) *string {
+	if !s.Valid {
+		return nil
+	}
+	return &s.String
 }

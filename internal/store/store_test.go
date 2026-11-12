@@ -177,3 +177,58 @@ func TestFinishedDateBackfill(t *testing.T) {
 		}
 	}
 }
+
+func TestRatingsBecomeTierLetters(t *testing.T) {
+	dir := t.TempDir()
+	// Build a version 2 database by hand, with 0-10 ratings as an older install would have.
+	db, err := sql.Open("sqlite", "file:"+filepath.ToSlash(filepath.Join(dir, dbFile)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	v1, _ := migrationFS.ReadFile("migrations/001_init.sql")
+	v2, _ := migrationFS.ReadFile("migrations/002_finished_date_and_tiers.sql")
+	if _, err := db.Exec(string(v1) + ";" + string(v2) + `;
+		PRAGMA user_version = 2;
+		INSERT INTO game (appid, name, status, rating, first_seen_at) VALUES
+			(1, 'a', 'finished', 0, 'x'), (2, 'b', 'finished', 1, 'x'), (3, 'c', 'finished', 2, 'x'),
+			(4, 'd', 'finished', 3, 'x'), (5, 'e', 'finished', 4, 'x'), (6, 'f', 'finished', 5, 'x'),
+			(7, 'g', 'finished', 6, 'x'), (8, 'h', 'finished', 7, 'x'), (9, 'i', 'finished', 8, 'x'),
+			(10, 'j', 'finished', 9, 'x'), (11, 'k', 'finished', 10, 'x'), (12, 'l', 'finished', NULL, 'x');
+		INSERT INTO event (at, kind, appid, payload) VALUES
+			('2025-01-01T10:00:00Z', 'rated', 11, '{"rating":10}'),
+			('2025-01-01T10:00:00Z', 'rated', 4, '{"rating":3}'),
+			('2025-01-01T10:00:00Z', 'rated', 12, '{"rating":null}');`); err != nil {
+		t.Fatal(err)
+	}
+	db.Close()
+
+	db, err = Open(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	want := []string{"F", "D", "D", "C", "C", "B", "B", "A", "A", "S", "S", ""}
+	for i, w := range want {
+		var got sql.NullString
+		if err := db.QueryRow(`SELECT rating FROM game WHERE appid = ?`, i+1).Scan(&got); err != nil {
+			t.Fatal(err)
+		}
+		if got.String != w || got.Valid != (w != "") {
+			t.Errorf("game %d rating = %v, want %q", i+1, got, w)
+		}
+	}
+	rows, err := db.Query(`SELECT payload FROM event WHERE kind = 'rated' ORDER BY id`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer rows.Close()
+	var payloads []string
+	for rows.Next() {
+		var p string
+		rows.Scan(&p)
+		payloads = append(payloads, p)
+	}
+	if len(payloads) != 3 || payloads[0] != `{"rating":"S"}` || payloads[1] != `{"rating":"C"}` || payloads[2] != `{"rating":null}` {
+		t.Fatalf("rated payloads = %v", payloads)
+	}
+}

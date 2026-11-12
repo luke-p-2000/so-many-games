@@ -170,7 +170,7 @@ type State struct {
 	AppID      int     `json:"appid"`
 	Status     Status  `json:"status"`
 	Completed  bool    `json:"completed"`
-	Rating     *int    `json:"rating"`
+	Rating     *string `json:"rating"`
 	FinishedAt *string `json:"finishedAt"`
 }
 
@@ -240,10 +240,10 @@ func (s *Service) Restore(states []State) error {
 	return tx.Commit()
 }
 
-// SetRating sets or clears (nil) the 1-10 rating of a Finished game (L4).
-func (s *Service) SetRating(appid int, rating *int) error {
-	if rating != nil && (*rating < 1 || *rating > 10) {
-		return errors.New("rating must be 1 to 10")
+// SetRating sets or clears (nil) the S-F rating of a Finished game (L4, ADR 0020).
+func (s *Service) SetRating(appid int, rating *string) error {
+	if rating != nil && !ValidRating(*rating) {
+		return errors.New("rating must be S, A, B, C, D or F")
 	}
 	tx, err := s.DB.Begin()
 	if err != nil {
@@ -257,7 +257,7 @@ func (s *Service) SetRating(appid int, rating *int) error {
 	if n, _ := res.RowsAffected(); n == 0 {
 		return errors.New("only Finished games take a rating")
 	}
-	if err := events.Log(tx, s.Now(), events.Rated, appid, map[string]*int{"rating": rating}); err != nil {
+	if err := events.Log(tx, s.Now(), events.Rated, appid, map[string]*string{"rating": rating}); err != nil {
 		return err
 	}
 	return tx.Commit()
@@ -301,14 +301,13 @@ func (s *Service) SetFinishedAt(appid int, date string) error {
 
 func readState(tx *sql.Tx, appid int) (State, error) {
 	st := State{AppID: appid}
-	var rating sql.NullInt64
-	var finished sql.NullString
+	var rating, finished sql.NullString
 	err := tx.QueryRow(`SELECT status, completed, rating, finished_at FROM game WHERE appid = ?`, appid).
 		Scan(&st.Status, &st.Completed, &rating, &finished)
 	if errors.Is(err, sql.ErrNoRows) {
 		return st, errors.New("game not found")
 	}
-	st.Rating = intPtr(rating)
+	st.Rating = strPtr(rating)
 	if finished.Valid {
 		st.FinishedAt = &finished.String
 	}

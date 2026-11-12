@@ -1,6 +1,6 @@
 # 0015 Ratings and Not for me weight the taste profile
 
-Status: Accepted · 2026-11-07
+Status: Accepted · 2026-11-07 · rating scale changed to S–F by ADR 0020
 
 ## Context
 The taste profile (R1) counted every played game by its dampened hours alone. A game rated 2/10 counted the same as one rated 10/10, and a game marked Not for me after many hours counted as fully as a favourite.

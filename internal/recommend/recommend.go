@@ -114,18 +114,21 @@ func BuildProfile(games []library.Game, stoplist, pinned, avoided []string, sinc
 	return Profile{Tags: tags, Avoided: avoided}
 }
 
-// NeutralRating is the rating that leaves a game's weight unchanged.
-const NeutralRating = 5.5
+// RatingWeights scale a rated game's taste weight around B, which leaves it unchanged
+// (ADR 0015, ADR 0020). Roughly the old 0-10 midpoints over 5.5; F keeps a tenth.
+var RatingWeights = map[string]float64{"S": 1.75, "A": 1.4, "B": 1, "C": 0.65, "D": 0.3, "F": 0.1}
 
 // liking scales a game's taste weight (ADR 0015): Not for me counts for nothing, a rating
-// scales around NeutralRating (10 counts about double, 1 under a fifth), and anything
-// else counts as played.
+// scales by RatingWeights (S counts nearly double, F a tenth), and anything else counts
+// as played.
 func liking(g library.Game) float64 {
 	if g.Status == library.NotForMe {
 		return 0
 	}
 	if g.Rating != nil {
-		return float64(*g.Rating) / NeutralRating
+		if w, ok := RatingWeights[*g.Rating]; ok {
+			return w
+		}
 	}
 	return 1
 }

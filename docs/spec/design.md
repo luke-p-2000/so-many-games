@@ -30,7 +30,7 @@ One SQLite file in the app-data folder; cover art is cached beside it as files. 
 
 | Table | Key columns |
 | --- | --- |
-| `game` | `appid` (PK), name, status, completed (only when Finished; unchecked means finished with it), rating (1–10, only when Finished), hidden, hidden\_reason, hide\_override (Not clutter / manual hide), classified, meta\_unavailable (ADR 0003), first\_seen\_at |
+| `game` | `appid` (PK), name, status, completed (only when Finished; unchecked means finished with it), rating (S–F, only when Finished, ADR 0020), hidden, hidden\_reason, hide\_override (Not clutter / manual hide), classified, meta\_unavailable (ADR 0003), first\_seen\_at |
 | `playtime_snapshot` | appid, taken\_at, minutes\_total, last\_played\_at (nullable) |
 | `game_meta` | appid, fetched\_at, release\_date, review\_pct, review\_count, is\_game (store type 0), cover\_path |
 | `fetch_failure` | appid, reason, at: the latest failed fetch per game (S6) |
@@ -74,7 +74,7 @@ type Engine interface {
 }
 ```
 
-`Profile` holds weighted tags (top 5 by dampened hours times rating / 5.5, Not for me excluded, ADR 0015; all-time or last 6 months), pinned and avoided tags, and the stoplist. The built-in engine does the following:
+`Profile` holds weighted tags (top 5 by dampened hours times a rating weight, B neutral, Not for me excluded, ADR 0015 and 0020; all-time or last 6 months), pinned and avoided tags, and the stoplist. The built-in engine does the following:
 
 1. Drop stoplist tags; add pinned tags; remove candidates with an avoided tag.
 2. Skip candidates with fewer than 50 reviews.

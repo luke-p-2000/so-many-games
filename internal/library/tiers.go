@@ -9,6 +9,27 @@ import (
 // Tiers are the tier list rows, best first (T2).
 var Tiers = []string{"S", "A", "B", "C", "D", "F"}
 
+// ValidRating reports whether r is a rating: one of the tier letters (ADR 0020).
+func ValidRating(r string) bool { return slices.Contains(Tiers, r) }
+
+// RatingFromScore maps an old 0-10 score to its tier letter: 0 = F, 1-2 = D, 3-4 = C,
+// 5-6 = B, 7-8 = A, 9-10 = S (ADR 0020, migration 003, version 1 exports).
+func RatingFromScore(n int) string {
+	switch {
+	case n >= 9:
+		return "S"
+	case n >= 7:
+		return "A"
+	case n >= 5:
+		return "B"
+	case n >= 3:
+		return "C"
+	case n >= 1:
+		return "D"
+	}
+	return "F"
+}
+
 // TierEntry places one game in the tier list.
 type TierEntry struct {
 	AppID    int    `json:"appid"`

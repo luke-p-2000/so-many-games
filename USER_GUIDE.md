@@ -44,7 +44,7 @@ Every game has one status. Change it with the row of icons on a game (hover an i
 | To play | Next on your list |
 | Playing | In progress |
 | Shelved | Started, then put down |
-| Finished | Done. You can also tick **Completed** and rate it 1–10 |
+| Finished | Done. You can also tick **Completed** and rate it S, A, B, C, D or F, like the tier list |
 | Not for me | Tried it, won't go back |
 | Endless | No ending, such as sandboxes or multiplayer you dip into |
 | Dead | Can't be played any more, such as when servers have shut down |
